@@ -43,7 +43,7 @@ class Tennis {
   requestQueue() {
     axios.get("/tennis/queue").then(resp => {
       this.queueIo = io.connect(
-        "http://localhost:+ " + resp.data.port + resp.data.path
+        window.location.origin + ":" + resp.data.port + resp.data.path
       );
       this.ticket = resp.data;
       this.queueIo.emit("confirm", resp.data);
@@ -56,7 +56,7 @@ class Tennis {
     this.setStatus("on_queue");
     this.queueIo.on("start", data => {
       this.gameIo = io.connect(
-        "http://localhost:+ " + resp.data.port + data.path
+        window.location.origin + ":" + data.port + data.path
       );
       this.setGameIo();
       this.queueIo.disconnect();
