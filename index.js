@@ -3,8 +3,7 @@ var server = require("http").Server(app);
 var io = require("socket.io")(server);
 const tennisGame = require("./tennis");
 
-server.listen(8000 || process.env.PORT);
-// WARNING: app.listen(80) will NOT work here!
+server.listen(process.env.PORT || 8000);
 
 app.get("/", function(req, res) {
   res.sendFile(__dirname + "/client/index.html");
