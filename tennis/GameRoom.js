@@ -1,0 +1,44 @@
+class GameRoom {
+  static available(mapOfRooms) {
+    const result = Array.from(mapOfRooms).find(([_, room]) => {
+      return !room.playersEnough();
+    });
+    return result && result[1];
+  }
+
+  constructor(options) {
+    this.status = options.status || "queue";
+    this.maxPlayers = options.maxPlayers;
+    this.minPlayers = options.minPlayers;
+    this.id = options.id;
+    this.players = new Map();
+  }
+  setStatus(status) {
+    this.status = status;
+  }
+  search(playerId) {
+    return this.players.get(playerId);
+  }
+  set(playerId, player) {
+    this.players.set(playerId, player);
+  }
+  join(player) {
+    if (!this.isFull()) return this.players.set(player.id, player);
+  }
+  leave(player) {
+    return this.players.delete(player.id);
+  }
+  isFull() {
+    return this.players.size >= this.maxPlayers;
+  }
+  playersEnough() {
+    return this.players.size >= this.minPlayers;
+  }
+  size() {
+    return this.players.size;
+  }
+  array() {
+    return Array.from(this.players).map(([_, player]) => player);
+  }
+}
+module.exports = GameRoom;

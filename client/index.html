@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body style="text-align: center">
+    <div>
+      <input type="text" id="msg" placeholder="Send a message!" />
+      <button>Send</button>
+    </div>
+    <canvas
+      height="500"
+      width="500"
+      style="width: 500px; height: 500px; background-color: darkolivegreen"
+    >
+    </canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      ctx = document.querySelector("canvas").getContext("2d");
+
+      axios.get("/tennis/queue").then(resp => {
+        console.log(resp);
+        var socket = io.connect("http://localhost:8000" + resp.data.path);
+        socket.on("connect", data => console.log(data));
+        socket.emit("confirm", resp.data);
+        socket.on("start", data => {
+          var gameIo = io.connect("http://localhost:8000" + data.path);
+
+          gameIo.emit("enterGame", resp.data);
+          gameIo.on("players", data => console.log(data));
+          gameIo.on("state", state => {
+            ctx.clearRect(0, 0, 500, 500);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
+<!DOCTYPE html>
