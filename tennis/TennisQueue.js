@@ -27,7 +27,8 @@ class TennisQueue {
     const ticket = {
       id: ++this.ticketsCount,
       secret: "tennisQueueSecret#" + Math.random() * 1000000000000000000,
-      path: this.io.name
+      path: this.io.name,
+      port: process.env.PORT || 8000
     };
     this.tickets[ticket.id] = ticket;
     res.send(ticket);

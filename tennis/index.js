@@ -33,7 +33,9 @@ class GameManager {
   initGame(room) {
     const newGameId = this.currentGames.size;
     const newGamePath = `${this.rootPath}/${newGameId}`;
-    this.queueIo.to(room.id).emit("start", { path: newGamePath });
+    this.queueIo
+      .to(room.id)
+      .emit("start", { path: newGamePath, port: process.env.PORT || 8000 });
     this.currentGames.set(
       newGameId,
       new TennisGame(newGamePath, this.io.of(newGamePath), room)
