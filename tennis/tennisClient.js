@@ -244,11 +244,11 @@ class Tennis {
     }
 
     if (isDown("a")) {
-      this.movePlayer("x", -10);
+      this.movePlayer("x", -5);
       this.sendPosition();
     }
     if (isDown("d")) {
-      this.movePlayer("x", 10);
+      this.movePlayer("x", 5);
       this.sendPosition();
     }
   }
