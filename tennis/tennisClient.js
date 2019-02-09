@@ -110,6 +110,8 @@ class Tennis {
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.ping = new Date().getTime() - data.time;
+
+    this.me = data.players[this.ticket.id];
     this.state = data;
     this.drawGame();
   }
@@ -120,6 +122,14 @@ class Tennis {
 
     ctx.clearRect(0, 0, 500, 500);
     ctx.fillStyle = "black";
+
+    state.projectiles.forEach(bullet => {
+      ctx.strokeStyle = "black 2px";
+      ctx.fillStyle = "brown";
+      ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+      ctx.strokeRect(bullet.x, bullet.y, bullet.width, bullet.height);
+    });
+
     state.balls.forEach(ball => {
       ctx.beginPath();
       ctx.strokeStyle = "black 2px";
@@ -236,6 +246,10 @@ class Tennis {
     }
   }
 
+  shoot() {
+    this.gameIo.emit("shoot");
+  }
+
   inputHandler() {
     if (this.keysdown.length < 1) return;
     const isDown = key => this.keysdown.includes(key.toLowerCase());
@@ -244,7 +258,9 @@ class Tennis {
     }
     if (isDown("s")) {
     }
-
+    if (isDown(" ")) {
+      this.shoot();
+    }
     if (isDown("a")) {
       this.movePlayer("x", -10);
       this.sendPosition();

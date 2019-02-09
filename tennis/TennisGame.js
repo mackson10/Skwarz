@@ -5,14 +5,19 @@ class TennisGame {
     this.path = path;
     this.gameIo = gameIo;
     this.queueRoom = queueRoom;
-    this.connectedPlayers = new GameRoom({ minPlayers: 2, maxPlayers: 2 });
     this.minPlayers = 2;
+    this.connectedPlayers = new GameRoom({
+      minPlayers: this.minPlayers,
+      maxPlayers: this.minPlayers
+    });
     this.balls = new Map();
     this.width = 500;
     this.height = 500;
-    this.setIo();
     this.status = "waiting players";
-    this.ballsCounter = 0;
+    this.ballsCount = 0;
+    this.entities = { projectiles: new Map() };
+    this.projectilesCount = 0;
+    this.setIo();
   }
 
   setStatus(status) {
@@ -29,15 +34,51 @@ class TennisGame {
     });
   }
 
+  enterGame(socket, ticket) {
+    let player = this.queueRoom.search(ticket.id);
+    if (player && player.secret === ticket.secret) {
+      const player = { id: ticket.id, secret: ticket.secret, socket };
+      socket.player = player;
+      this.connectedPlayers.join(player);
+      this.queueRoom.leave(player);
+      socket.emit("waiting players");
+      this.setSocket(socket);
+      this.checkConnected();
+    } else {
+      socket.emit("not confirmed");
+    }
+  }
+
   setSocket(socket) {
     socket.on("disconnect", reason => {
       if (socket.player) {
         this.leaveGame(socket.player);
       }
     });
-    socket.on("position", newPosition =>
-      this.movePlayer(socket.player, newPosition)
-    );
+    socket.on("position", newPosition => {
+      if (this.status === "running")
+        this.movePlayer(socket.player, newPosition);
+    });
+    socket.on("shoot", _ => {
+      if (this.status === "running") this.shoot(socket.player);
+    });
+  }
+
+  checkConnected() {
+    this.sendPlayersCount();
+    if (
+      this.connectedPlayers.size() >= this.minPlayers &&
+      this.status === "waiting players"
+    ) {
+      this.setupGame();
+    } else if (
+      this.connectedPlayers.size() < this.minPlayers &&
+      this.status !== "waiting players" &&
+      this.status !== "end game"
+    ) {
+      const winner = this.connectedPlayers.array()[0];
+      this.endGame(this[winner.role]);
+    }
   }
 
   leaveGame(player) {
@@ -58,47 +99,18 @@ class TennisGame {
   movePlayer(player, newPosition) {
     if (!player || (player.role != "P2" && player.role != "P1")) return false;
 
-    const movingPlayerRole = player.role;
+    const movingPlayer = this[player.role];
 
-    //validation...
-
-    this[movingPlayerRole].state.x = newPosition.x;
-  }
-
-  enterGame(socket, ticket) {
-    let player = this.queueRoom.search(ticket.id);
-    if (player && player.secret === ticket.secret) {
-      const player = { id: ticket.id, secret: ticket.secret, socket };
-      socket.player = player;
-      this.connectedPlayers.join(player);
-      this.queueRoom.leave(player);
-      socket.emit("waiting players");
-      this.setSocket(socket);
-      this.checkConnected();
-    } else {
-      socket.emit("not confirmed");
-    }
+    if (
+      Math.abs(movingPlayer.state.x - newPosition.x) <= 15 &&
+      newPosition.x + movingPlayer.state.width / 2 >= 0 &&
+      newPosition.x + movingPlayer.state.width / 2 <= this.width
+    )
+      movingPlayer.state.x = newPosition.x;
   }
 
   sendPlayersCount() {
     this.gameIo.emit("players", { connectedPlayers: this.connectedPlayers });
-  }
-
-  checkConnected() {
-    this.sendPlayersCount();
-    if (
-      this.connectedPlayers.size() >= this.minPlayers &&
-      this.status === "waiting players"
-    ) {
-      this.setupGame();
-    } else if (
-      this.connectedPlayers.size() < this.minPlayers &&
-      this.status !== "waiting players" &&
-      this.status !== "end game"
-    ) {
-      const winner = this.connectedPlayers.array()[0];
-      this.endGame(this[winner.role]);
-    }
   }
 
   startGame() {
@@ -163,10 +175,10 @@ class TennisGame {
         this.losingBall(this.P1, ball);
       }
 
-      if (this.checkBallCollision(ball, this.P1)) {
+      if (this.checkPlayerCollision(this.P1, ball, "ball")) {
         this.touchingBall(ball, this.P1);
       }
-      if (this.checkBallCollision(ball, this.P2)) {
+      if (this.checkPlayerCollision(this.P2, ball, "ball")) {
         this.touchingBall(ball, this.P2);
       }
       ball.x += ball.vx;
@@ -174,21 +186,64 @@ class TennisGame {
     });
   }
 
-  checkBallCollision(ball, player) {
-    const objState = player.state;
-    return (
-      ball.x + ball.size * 2 >= objState.x &&
-      ball.x - ball.size * 2 <= objState.x + objState.width &&
-      ball.y + ball.size * 2 >= objState.y &&
-      ball.y - ball.size * 2 <= objState.y + objState.height
-    );
+  checkPlayerCollision(player, object, type) {
+    const playerState = player.state;
+
+    switch (type) {
+      case "ball":
+        const ball = object;
+        return (
+          ball.x + ball.size * 2 >= playerState.x &&
+          ball.x - ball.size * 2 <= playerState.x + playerState.width &&
+          ball.y + ball.size * 2 >= playerState.y &&
+          ball.y - ball.size * 2 <= playerState.y + playerState.height
+        );
+      default:
+        return (
+          object.x + object.width >= playerState.x &&
+          object.x <= playerState.x + playerState.width &&
+          object.y + object.height >= playerState.y &&
+          object.y <= playerState.y + playerState.height
+        );
+    }
   }
 
-  entitiesInteractions() {}
+  entitiesInteractions() {
+    Array.from(this.entities.projectiles).forEach(([id, bullet]) => {
+      bullet.y += bullet.vy;
+
+      if (bullet.y - bullet.size > this.height) {
+        this.entities.projectiles.delete(bullet.id);
+      } else if (bullet.y + bullet.size < 0) {
+        this.entities.projectiles.delete(bullet.id);
+      }
+
+      if (this.checkPlayerCollision(this.P1, bullet)) {
+        this.playerGrow(this.P1, -1);
+        //this.entities.projectiles.delete(bullet.id);
+      }
+      if (this.checkPlayerCollision(this.P2, bullet)) {
+        this.playerGrow(this.P2, -1);
+        //this.entities.projectiles.delete(bullet.id);
+      }
+    });
+  }
+
+  playerGrow(player, delta) {
+    let newWidth = player.state.width;
+    newWidth += delta;
+    if (newWidth < 45) {
+      newWidth = 45;
+      delta = 45 - player.state.width;
+    }
+
+    player.state.width = newWidth;
+    player.state.x -= delta / 2;
+  }
 
   losingBall(player, ball) {
     player.gameInfo.lifes--;
-    player.state.width += 10;
+    this.playerGrow(player, 15);
     this.balls.delete(ball.id);
     if (player.gameInfo.lifes < 1) {
       if (player.role === "P2") {
@@ -213,7 +268,6 @@ class TennisGame {
     if (Math.abs(touchX) < 0.2) {
       bonus = 2;
     }
-    console.log(touchX);
     touchX *= 0.7;
     ball.vx = touchX * ball.speed;
     ball.vy =
@@ -229,7 +283,7 @@ class TennisGame {
       ball.lastTouch = player.role;
       ball.color = player.gameInfo.color;
       ball.speed *= 1 + 1 / ball.speed / 10;
-      player.state.width > 15 ? (player.state.width -= 5) : null;
+      this.playerGrow(player, -10);
       player.gameInfo.points += 1;
     }
   }
@@ -239,7 +293,7 @@ class TennisGame {
     const rvy = 5 * (Math.random() > 0.5 ? -1 : 1);
     const rsize = Math.random() * 5 + 5;
     const newBall = {
-      id: this.ballsCounter++,
+      id: ++this.ballsCount,
       size: rsize,
       x: 250,
       y: 250,
@@ -249,6 +303,27 @@ class TennisGame {
       color: "black"
     };
     this.balls.set(newBall.id, newBall);
+  }
+
+  shoot(_player) {
+    const player = this[_player.role];
+
+    if (player.lastShot && new Date().getTime() - player.lastShot <= 3000)
+      return;
+
+    const newBullet = {
+      id: ++this.projectilesCount,
+      x: player.state.x + player.state.width / 2,
+      y:
+        player.state.y +
+        (player.role === "P1" ? player.state.height + 25 : -25),
+      owner: player,
+      vy: player.role === "P1" ? 6 : -6,
+      width: 15,
+      height: 25
+    };
+    this.entities.projectiles.set(newBullet.id, newBullet);
+    player.lastShot = new Date().getTime();
   }
 
   setupObject() {
@@ -272,6 +347,9 @@ class TennisGame {
         }
       },
       balls: Array.from(this.balls).map(([_, ball]) => ball),
+      projectiles: Array.from(this.entities.projectiles).map(
+        ([_, bullet]) => bullet
+      ),
       time: new Date().getTime()
     };
   }
