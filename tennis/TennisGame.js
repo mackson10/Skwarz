@@ -105,7 +105,7 @@ class TennisGame {
     this.setStatus("starting");
     this.gameIo.emit("start");
     this.ballTimer = setInterval(() => this.createBall(), 20000);
-    this.timer = setInterval(() => this.loopFunction(), 16);
+    this.timer = setInterval(() => this.loopFunction(), 30);
     this.setStatus("running");
   }
 
@@ -116,13 +116,13 @@ class TennisGame {
       role: "P1",
       pid: players[0].id,
       state: { width: 180, height: 45, x: 160, y: -30 },
-      gameInfo: { points: 0, color: "blue", lifes: 15 }
+      gameInfo: { points: 0, color: "blue", lifes: 10 }
     };
     this.P2 = {
       role: "P2",
       pid: players[1].id,
       state: { width: 180, height: 45, x: 160, y: 485 },
-      gameInfo: { points: 0, color: "yellow", lifes: 15 }
+      gameInfo: { points: 0, color: "yellow", lifes: 10 }
     };
 
     players[0].role = "P1";
@@ -231,7 +231,7 @@ class TennisGame {
 
   createBall() {
     const rvx = Math.random() * 10 - 5;
-    const rvy = Math.random() * 3 + 2 * (Math.random() > 0.5 ? -1 : 1);
+    const rvy = (Math.random() * 3 + 2) * (Math.random() > 0.5 ? -1 : 1);
     const rsize = Math.random() * 10 + 3;
     const newBall = {
       id: this.ballsCounter++,
