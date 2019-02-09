@@ -105,7 +105,7 @@ class TennisGame {
     this.setStatus("starting");
     this.gameIo.emit("start");
     this.ballTimer = setInterval(() => this.createBall(), 20000);
-    this.timer = setInterval(() => this.loopFunction(), 30);
+    this.timer = setInterval(() => this.loopFunction(), 20);
     this.setStatus("running");
   }
 
@@ -149,9 +149,6 @@ class TennisGame {
 
   ballsInteractions() {
     Array.from(this.balls).forEach(([id, ball]) => {
-      ball.x += ball.vx;
-      ball.y += ball.vy;
-
       if (ball.x + ball.size > this.width) {
         ball.x = this.width - ball.size;
         ball.vx *= -1;
@@ -172,6 +169,8 @@ class TennisGame {
       if (this.checkBallCollision(ball, this.P2)) {
         this.touchingBall(ball, this.P2);
       }
+      ball.x += ball.vx;
+      ball.y += ball.vy;
     });
   }
 
@@ -214,25 +213,31 @@ class TennisGame {
     if (Math.abs(touchX) < 0.2) {
       bonus = 2;
     }
-
+    console.log(touchX);
+    touchX *= 0.7;
     ball.vx = touchX * ball.speed;
     ball.vy =
-      (0.75 - Math.abs(touchX) * 0.75 + 0.25) *
+      (1 - Math.abs(touchX)) *
       ball.speed *
-      (ball.vy >= 0 ? -1 : 1) *
-      bonus;
-    ball.x += ball.vx * 2;
-    ball.y += ball.vy * 2;
-    ball.speed *= 1 + 1 / ball.speed / 10;
-    ball.color = player.gameInfo.color;
-    player.state.width > 15 ? (player.state.width -= 5) : null;
-    player.gameInfo.points += 1;
+      bonus *
+      (player.role === "P1" ? 1 : -1);
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if (ball.lastTouch !== player.role) {
+      ball.lastTouch = player.role;
+      ball.color = player.gameInfo.color;
+      ball.speed *= 1 + 1 / ball.speed / 10;
+      player.state.width > 15 ? (player.state.width -= 5) : null;
+      player.gameInfo.points += 1;
+    }
   }
 
   createBall() {
-    const rvx = Math.random() * 10 - 5;
-    const rvy = (Math.random() * 3 + 2) * (Math.random() > 0.5 ? -1 : 1);
-    const rsize = Math.random() * 10 + 3;
+    const rvx = 0;
+    const rvy = 5 * (Math.random() > 0.5 ? -1 : 1);
+    const rsize = Math.random() * 5 + 5;
     const newBall = {
       id: this.ballsCounter++,
       size: rsize,
@@ -240,7 +245,7 @@ class TennisGame {
       y: 250,
       vx: rvx,
       vy: rvy,
-      speed: 5,
+      speed: 10,
       color: "black"
     };
     this.balls.set(newBall.id, newBall);

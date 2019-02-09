@@ -246,11 +246,11 @@ class Tennis {
     }
 
     if (isDown("a")) {
-      this.movePlayer("x", -5);
+      this.movePlayer("x", -10);
       this.sendPosition();
     }
     if (isDown("d")) {
-      this.movePlayer("x", 5);
+      this.movePlayer("x", 10);
       this.sendPosition();
     }
   }
@@ -274,7 +274,7 @@ class Tennis {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
 
-    setInterval(e => this.inputHandler(e), 10);
+    setInterval(e => this.inputHandler(e), 30);
   }
 }
 
