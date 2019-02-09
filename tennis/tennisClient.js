@@ -7,6 +7,7 @@ class Tennis {
     this.drawUI(null, "Click to enter the queue");
     this.initInputHandler();
     this.keysdown = [];
+    this.ping = 0;
   }
 
   setStatus(status) {
@@ -108,6 +109,7 @@ class Tennis {
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
+    this.ping = new Date().getTime() - data.time;
     this.state = data;
     this.drawGame();
   }
@@ -160,7 +162,7 @@ class Tennis {
 
         ctx.fillText(this.me === this.P1 ? "You" : "P1", 440, 40);
         ctx.fillText(
-          this.state.players[this.P1.id].gameInfo.points + " Pts",
+          this.ping, //this.state.players[this.P1.id].gameInfo.points + " Pts",
           440,
           70
         );

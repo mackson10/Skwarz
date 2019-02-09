@@ -266,7 +266,8 @@ class TennisGame {
           gameInfo: this.P2.gameInfo
         }
       },
-      balls: Array.from(this.balls).map(([_, ball]) => ball)
+      balls: Array.from(this.balls).map(([_, ball]) => ball),
+      time: new Date().getTime()
     };
   }
   sendState() {
