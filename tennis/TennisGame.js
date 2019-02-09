@@ -105,7 +105,7 @@ class TennisGame {
     this.setStatus("starting");
     this.gameIo.emit("start");
     this.ballTimer = setInterval(() => this.createBall(), 20000);
-    this.timer = setInterval(() => this.loopFunction(), 10);
+    this.timer = setInterval(() => this.loopFunction(), 16);
     this.setStatus("running");
   }
 
