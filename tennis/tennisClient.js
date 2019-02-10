@@ -68,7 +68,7 @@ class Tennis {
     this.gameIo.on("setup", data => this.setupGame(data));
     this.gameIo.on("state", data => this.updateState(data));
     this.gameIo.on("endGame", data => this.endGame(data));
-    this.gameIo.on("correctState", data => this.correctState(data));
+    //this.gameIo.on("correctState", data => this.correctState(data));
   }
 
   endGame(endState) {
@@ -96,7 +96,7 @@ class Tennis {
 
   setupGame(data) {
     this.setStatus("starting");
-    this.me = data.players[this.ticket.id];
+    this.myRole = data.players[this.ticket.id].role;
   }
 
   updateState(data) {
@@ -134,10 +134,8 @@ class Tennis {
       ctx.fill();
     });
 
-    const notMyRole = this.me.role === "P1" ? "P2" : "P1";
-    this.drawPlayer(this[notMyRole]);
-
-    this.drawPlayer(this.me);
+    this.drawPlayer(this.P1);
+    this.drawPlayer(this.P2);
 
     this.drawUI("RunningGame");
   }
@@ -272,17 +270,12 @@ class Tennis {
     }
   }
 
-  correctState(state) {
-    this.me.state = state;
-  }
-
   movePlayer(axis, delta) {
-    this.me.state[axis] += delta;
-    this.drawGame();
+    this[this.myRole].state[axis] += delta;
   }
 
   sendPosition() {
-    this.gameIo.emit("position", this.me.state);
+    this.gameIo.emit("position", this[this.myRole].state);
   }
 
   initInputHandler() {

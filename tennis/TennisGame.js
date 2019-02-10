@@ -335,7 +335,6 @@ class TennisGame {
   }
 
   correctState(player) {
-    console.log(player);
     const socket = this.connectedPlayers.search(player.pid).socket;
     socket.emit("correctState", player.state);
   }
