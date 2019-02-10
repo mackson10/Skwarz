@@ -68,6 +68,7 @@ class Tennis {
     this.gameIo.on("setup", data => this.setupGame(data));
     this.gameIo.on("state", data => this.updateState(data));
     this.gameIo.on("endGame", data => this.endGame(data));
+    this.gameIo.on("correctState", data => this.correctState(data));
   }
 
   endGame(endState) {
@@ -96,24 +97,18 @@ class Tennis {
   setupGame(data) {
     this.setStatus("starting");
     this.me = data.players[this.ticket.id];
-    for (let playerId in data.players) {
-      const player = data.players[playerId];
-      if (player.role === "P2") {
-        this.P2 = player;
-      } else if (player.role === "P1") {
-        this.P1 = player;
-      }
-    }
-    this.state = data;
   }
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
-    else {
-      this.ping = new Date().getTime() - data.time;
-      this.state = data;
-      this.drawGame();
+
+    this.ping = new Date().getTime() - data.time;
+    for (let playerId in data.players) {
+      let player = data.players[playerId];
+      this[player.role] = player;
     }
+    this.state = data;
+    this.drawGame();
   }
 
   drawGame() {
@@ -139,16 +134,17 @@ class Tennis {
       ctx.fill();
     });
 
-    for (let playerId in state.players) {
-      if (playerId !== this.ticket.id) {
-        this.drawPlayer(state.players[playerId]);
-      }
-    }
+    const notMyRole = this.me.role === "P1" ? "P2" : "P1";
+    this.drawPlayer(this[notMyRole]);
+
     this.drawPlayer(this.me);
+
     this.drawUI("RunningGame");
   }
 
   drawPlayer(player) {
+    const ctx = this.ctx;
+
     const pState = player.state;
     const pGameInfo = player.gameInfo;
 
@@ -274,6 +270,10 @@ class Tennis {
         this.sendPosition();
       }
     }
+  }
+
+  correctState(state) {
+    this.me.state = state;
   }
 
   movePlayer(axis, delta) {

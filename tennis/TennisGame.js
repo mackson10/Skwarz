@@ -107,6 +107,9 @@ class TennisGame {
       newPosition.x + movingPlayer.state.width / 2 <= this.width
     )
       movingPlayer.state.x = newPosition.x;
+    else {
+      this.correctState(movingPlayer);
+    }
   }
 
   sendPlayersCount() {
@@ -239,6 +242,7 @@ class TennisGame {
 
     player.state.width = newWidth;
     player.state.x -= delta / 2;
+    this.correctState(player);
   }
 
   losingBall(player, ball) {
@@ -328,6 +332,12 @@ class TennisGame {
 
   setupObject() {
     return this.stateObject();
+  }
+
+  correctState(player) {
+    console.log(player);
+    const socket = this.connectedPlayers.search(player.pid).socket;
+    socket.emit("correctState", player.state);
   }
 
   stateObject() {
