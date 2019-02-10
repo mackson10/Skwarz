@@ -139,25 +139,26 @@ class Tennis {
       ctx.fill();
     });
 
-    for (const playerId in state.players) {
-      const player = state.players[playerId];
-      const pState = player.state;
-      const pGameInfo = player.gameInfo;
-
-      ctx.fillStyle = "blue";
-      ctx.fillStyle = pGameInfo.color;
-      ctx.fillRect(pState.x, pState.y, pState.width, pState.height);
-      ctx.fillStyle = "red";
-      ctx.fillRect(
-        pState.x + pState.width / 2 - 5,
-        pState.y,
-        10,
-        pState.height
-      );
-      ctx.strokeStyle = "black 2px";
-      ctx.strokeRect(pState.x, pState.y, pState.width, pState.height);
+    for (let playerId in state.players) {
+      if (playerId !== this.ticket.id) {
+        this.drawPlayer(state.players[playerId]);
+      }
     }
+    this.drawPlayer(this.me);
     this.drawUI("RunningGame");
+  }
+
+  drawPlayer(player) {
+    const pState = player.state;
+    const pGameInfo = player.gameInfo;
+
+    ctx.fillStyle = "blue";
+    ctx.fillStyle = pGameInfo.color;
+    ctx.fillRect(pState.x, pState.y, pState.width, pState.height);
+    ctx.fillStyle = "red";
+    ctx.fillRect(pState.x + pState.width / 2 - 5, pState.y, 10, pState.height);
+    ctx.strokeStyle = "black 2px";
+    ctx.strokeRect(pState.x, pState.y, pState.width, pState.height);
   }
 
   drawUI(action, data) {
@@ -262,12 +263,16 @@ class Tennis {
       this.shoot();
     }
     if (isDown("a")) {
-      this.movePlayer("x", -10);
-      this.sendPosition();
+      if (this.status === "running") {
+        this.movePlayer("x", -10);
+        this.sendPosition();
+      }
     }
     if (isDown("d")) {
-      this.movePlayer("x", 10);
-      this.sendPosition();
+      if (this.status === "running") {
+        this.movePlayer("x", 10);
+        this.sendPosition();
+      }
     }
   }
 
