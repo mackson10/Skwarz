@@ -109,9 +109,11 @@ class Tennis {
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
-    this.ping = new Date().getTime() - data.time;
-    this.state = data;
-    this.drawGame();
+    else {
+      this.ping = new Date().getTime() - data.time;
+      this.state = data;
+      this.drawGame();
+    }
   }
 
   drawGame() {
