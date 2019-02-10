@@ -55,9 +55,8 @@ class TennisGame {
         this.leaveGame(socket.player);
       }
     });
-    socket.on("position", newPosition => {
-      if (this.status === "running")
-        this.movePlayer(socket.player, newPosition);
+    socket.on("move", movement => {
+      if (this.status === "running") this.movePlayer(socket.player, movement);
     });
     socket.on("shoot", _ => {
       if (this.status === "running") this.shoot(socket.player);
@@ -96,17 +95,20 @@ class TennisGame {
     );
   }
 
-  movePlayer(player, newPosition) {
+  movePlayer(player, movement) {
     if (!player || (player.role != "P2" && player.role != "P1")) return false;
 
     const movingPlayer = this[player.role];
+    const newState = { ...movingPlayer.state };
+
+    newState[movement.axis] += movement.delta;
 
     if (
-      Math.abs(movingPlayer.state.x - newPosition.x) <= 15 &&
-      newPosition.x + movingPlayer.state.width / 2 >= 0 &&
-      newPosition.x + movingPlayer.state.width / 2 <= this.width
+      Math.abs(movingPlayer.state.x - newState.x) <= 15 &&
+      newState.x + movingPlayer.state.width / 2 >= 0 &&
+      newState.x + movingPlayer.state.width / 2 <= this.width
     )
-      movingPlayer.state.x = newPosition.x;
+      movingPlayer.state.x = newState.x;
     else {
       this.correctState(movingPlayer);
     }
@@ -120,7 +122,7 @@ class TennisGame {
     this.setStatus("starting");
     this.gameIo.emit("start");
     this.ballTimer = setInterval(() => this.createBall(), 20000);
-    this.timer = setInterval(() => this.loopFunction(), 20);
+    this.timer = setInterval(() => this.loopFunction(), 15);
     this.setStatus("running");
   }
 

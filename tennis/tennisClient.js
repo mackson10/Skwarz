@@ -75,7 +75,7 @@ class Tennis {
     const winner = endState.winner;
     this.setStatus("end_game");
     let endMessage = "";
-    if (winner.pid === this.me.id) {
+    if (winner.pid === this[this.myRole].id) {
       endMessage = "You won! Congrats!";
     } else {
       endMessage = "You lost, keep training!";
@@ -265,17 +265,18 @@ class Tennis {
     if (isDown("d")) {
       if (this.status === "running") {
         this.movePlayer("x", 10);
-        this.sendPosition();
+        //this.sendPosition();
       }
     }
   }
 
   movePlayer(axis, delta) {
-    this[this.myRole].state[axis] += delta;
+    this.gameIo.emit("move", { axis, delta });
+    //this[this.myRole].state[axis] += delta;
   }
 
   sendPosition() {
-    this.gameIo.emit("position", this[this.myRole].state);
+    //this.gameIo.emit("position", this[this.myRole].state);
   }
 
   initInputHandler() {
@@ -289,7 +290,7 @@ class Tennis {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
 
-    setInterval(e => this.inputHandler(e), 20);
+    setInterval(e => this.inputHandler(e), 30);
   }
 }
 
