@@ -91,7 +91,7 @@ class TennisGame {
     clearInterval(this.ballTimer);
     setTimeout(
       () => this.gameIo.emit("endGame", { winner, ...this.state }),
-      1000
+      100
     );
   }
 
@@ -225,11 +225,11 @@ class TennisGame {
 
       if (this.checkPlayerCollision(this.P1, bullet)) {
         this.playerGrow(this.P1, -1);
-        //this.entities.projectiles.delete(bullet.id);
+        setTimeout(() => this.entities.projectiles.delete(bullet.id), 1000);
       }
       if (this.checkPlayerCollision(this.P2, bullet)) {
         this.playerGrow(this.P2, -1);
-        //this.entities.projectiles.delete(bullet.id);
+        setTimeout(() => this.entities.projectiles.delete(bullet.id), 1000);
       }
     });
   }

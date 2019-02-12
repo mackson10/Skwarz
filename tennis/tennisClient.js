@@ -68,7 +68,6 @@ class Tennis {
     this.gameIo.on("setup", data => this.setupGame(data));
     this.gameIo.on("state", data => this.updateState(data));
     this.gameIo.on("endGame", data => this.endGame(data));
-    //this.gameIo.on("correctState", data => this.correctState(data));
   }
 
   endGame(endState) {
@@ -103,6 +102,8 @@ class Tennis {
     if (this.status !== "running") this.setStatus("running");
 
     this.ping = new Date().getTime() - data.time;
+    console.log(this.ping);
+
     for (let playerId in data.players) {
       let player = data.players[playerId];
       this[player.role] = player;
@@ -167,7 +168,7 @@ class Tennis {
 
         ctx.fillText(this.me === this.P1 ? "You" : "P1", 440, 40);
         ctx.fillText(
-          this.ping, //this.state.players[this.P1.id].gameInfo.points + " Pts",
+          this.state.players[this.P1.id].gameInfo.points + " Pts",
           440,
           70
         );
@@ -199,7 +200,7 @@ class Tennis {
 
         ctx.fillText("Score", 250, startY - 70);
 
-        ctx.fillText(this.me === this.P1 ? "You" : "P1", startX, startY);
+        ctx.fillText(this.myRole === "P1" ? "You" : "P1", startX, startY);
         ctx.fillText(
           this.state.players[this.P1.id].gameInfo.points + " Pts",
           startX,
@@ -214,7 +215,7 @@ class Tennis {
         startX += 200;
         startY += 0;
 
-        ctx.fillText(this.me === this.P2 ? "You" : "P2", startX, startY);
+        ctx.fillText(this.myRole === "P2" ? "You" : "P2", startX, startY);
         ctx.fillText(
           this.state.players[this.P2.id].gameInfo.points + " Pts",
           startX,
@@ -259,24 +260,17 @@ class Tennis {
     if (isDown("a")) {
       if (this.status === "running") {
         this.movePlayer("x", -10);
-        this.sendPosition();
       }
     }
     if (isDown("d")) {
       if (this.status === "running") {
         this.movePlayer("x", 10);
-        //this.sendPosition();
       }
     }
   }
 
   movePlayer(axis, delta) {
     this.gameIo.emit("move", { axis, delta });
-    //this[this.myRole].state[axis] += delta;
-  }
-
-  sendPosition() {
-    //this.gameIo.emit("position", this[this.myRole].state);
   }
 
   initInputHandler() {
@@ -285,11 +279,9 @@ class Tennis {
         this.keysdown.push(e.key.toLowerCase());
       }
     };
-
     document.onkeyup = e => {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
-
     setInterval(e => this.inputHandler(e), 30);
   }
 }
