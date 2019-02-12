@@ -166,7 +166,7 @@ class Tennis {
       case "RunningGame":
         ctx.fillStyle = "black";
 
-        ctx.fillText(this.me === this.P1 ? "You" : "P1", 440, 40);
+        ctx.fillText(this.myRole === "P1" ? "You" : "P1", 440, 40);
         ctx.fillText(
           this.state.players[this.P1.id].gameInfo.points + " Pts",
           440,
@@ -178,7 +178,7 @@ class Tennis {
           100
         );
 
-        ctx.fillText(this.me === this.P2 ? "You" : "P2", 440, 410);
+        ctx.fillText(this.myRole === "P2" ? "You" : "P2", 440, 410);
         ctx.fillText(
           this.state.players[this.P2.id].gameInfo.points + " Pts",
           440,
