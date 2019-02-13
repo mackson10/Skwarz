@@ -1,4 +1,4 @@
-class GameRoom {
+class Room {
   static available(mapOfRooms) {
     const result = Array.from(mapOfRooms).find(([_, room]) => {
       return !room.playersEnough();
@@ -7,7 +7,7 @@ class GameRoom {
   }
 
   constructor(options) {
-    this.status = options.status || "queue";
+    this.status = options.status;
     this.maxPlayers = options.maxPlayers;
     this.minPlayers = options.minPlayers;
     this.id = options.id;
@@ -41,4 +41,4 @@ class GameRoom {
     return Array.from(this.players).map(([_, player]) => player);
   }
 }
-module.exports = GameRoom;
+module.exports = Room;

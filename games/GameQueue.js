@@ -1,16 +1,15 @@
 GameRoom = require("./GameRoom");
 
-class TennisQueue {
+class GameQueue {
   constructor(app, io, options, initGame) {
-    this.gamePath = options.path || "/tennis";
+    this.path = options.path;
     this.app = app;
-    this.games = [];
-    this.gameRooms = new Map(); // SALAS ESPERANDO PLAYERS?
-    this.gameRoomsCount = 0;
-    this.players = new Map(); // PLAYERS NA FILA
-    this.tickets = {}; // IDENTIFICACAO UNICA
-    this.ticketsCount = 0; // IDS GERADOS
-    this.roomOptions = { maxPlayers: 2, minPlayers: 2 }; //OPCOES DA SALA tamanho,... (particularizavel)
+    this.queueRooms = new Map();
+    this.queueRoomsCount = 0;
+    this.players = new Map();
+    this.tickets = {};
+    this.ticketsCount = 0;
+    this.roomOptions = options.room;
     this.io = io;
     this.initGame = initGame;
     this.setRoutes();
@@ -18,9 +17,8 @@ class TennisQueue {
   }
 
   setRoutes() {
-    const { app, gamePath } = this;
-    //app.get(gamePath, (req, res) => {});
-    app.get(gamePath + "/queue", (req, res) => this.queueRequest(req, res));
+    const { app, path } = this;
+    app.get(path + "/queue", (req, res) => this.queueRequest(req, res));
   }
 
   queueRequest(req, res) {
@@ -28,7 +26,7 @@ class TennisQueue {
       id: ++this.ticketsCount,
       secret: "tennisQueueSecret#" + Math.random() * 1000000000000000000,
       path: this.io.name,
-      port: process.env.PORT || 8000
+      port: this.app.serverPort
     };
     this.tickets[ticket.id] = ticket;
     res.send(ticket);
@@ -44,7 +42,7 @@ class TennisQueue {
             playersCount: room.size()
           });
           socket.join(room.id);
-          socket.ticket = confirmed;
+          socket.ticket = ticket;
           this.checkRoom(room);
         } else {
           socket.emit("not confirmed");
@@ -59,16 +57,21 @@ class TennisQueue {
     });
   }
 
-  leaveQueue(player) {
+  leaveQueue(ticket) {
+    const player = this.players.get(ticket.id);
     const playerRoom = player.room;
-    if (playerRoom.status === "queue") playerRoom.leave(player);
+    playerRoom.leave(player);
     this.players.delete(player.id);
   }
 
   checkRoom(room) {
     if (room.playersEnough()) {
-      room.setStatus("game");
-      this.initGame(room);
+      const roomTickets = {
+        roomId: room.id,
+        array: room.array().map(player => ({ ...player.ticket }))
+      };
+      this.initGame(roomTickets);
+      this.queueRooms.delete(room.id);
     }
     this.io.to(room.id).emit("players", room.size());
   }
@@ -76,22 +79,22 @@ class TennisQueue {
   confirmQueue(ticket, socket) {
     const theTicket = this.tickets[ticket.id];
     if (theTicket && theTicket.secret === ticket.secret) {
-      let newRoom = GameRoom.available(this.gameRooms);
-      if (!newRoom) {
-        const newRoomId = ++this.gameRoomsCount;
-        newRoom = new GameRoom({
+      let playerRoom = GameRoom.available(this.queueRooms);
+      if (!playerRoom) {
+        const playerRoomId = ++this.queueRoomsCount;
+        playerRoom = new GameRoom({
           ...this.roomOptions,
-          id: newRoomId
+          id: playerRoomId
         });
-        this.gameRooms.set(newRoomId, newRoom);
+        this.queueRooms.set(playerRoomId, playerRoom);
       }
 
-      const newPlayer = { ...ticket, socket, room: newRoom };
-      newRoom.join(newPlayer);
+      const newPlayer = { ...ticket, ticket, socket, room: playerRoom };
+      playerRoom.join(newPlayer);
       this.players.set(newPlayer.id, newPlayer);
       return newPlayer;
     } else return false;
   }
 }
 
-module.exports = TennisQueue;
+module.exports = GameQueue;

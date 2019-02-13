@@ -1,10 +1,10 @@
-GameRoom = require("./GameRoom");
+GameRoom = require("../games/GameRoom");
 
 class TennisGame {
-  constructor(path, gameIo, queueRoom) {
+  constructor(path, gameIo, ticketsArray) {
     this.path = path;
     this.gameIo = gameIo;
-    this.queueRoom = queueRoom;
+    this.tickets = ticketsArray;
     this.minPlayers = 2;
     this.connectedPlayers = new GameRoom({
       minPlayers: this.minPlayers,
@@ -34,13 +34,16 @@ class TennisGame {
     });
   }
 
-  enterGame(socket, ticket) {
-    let player = this.queueRoom.search(ticket.id);
-    if (player && player.secret === ticket.secret) {
-      const player = { id: ticket.id, secret: ticket.secret, socket };
+  enterGame(socket, playerTicket) {
+    let validTicket = this.tickets.find(
+      ticket => ticket.id === playerTicket.id && !ticket.taken
+    );
+
+    if (validTicket && validTicket.secret === playerTicket.secret) {
+      const player = { ...validTicket, socket };
+      validTicket.taken = true;
       socket.player = player;
       this.connectedPlayers.join(player);
-      this.queueRoom.leave(player);
       socket.emit("waiting players");
       this.setSocket(socket);
       this.checkConnected();

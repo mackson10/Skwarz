@@ -102,7 +102,7 @@ class Tennis {
     if (this.status !== "running") this.setStatus("running");
 
     this.ping = new Date().getTime() - data.time;
-    console.log(this.ping);
+    console.log("ping: " + this.ping);
 
     for (let playerId in data.players) {
       let player = data.players[playerId];
