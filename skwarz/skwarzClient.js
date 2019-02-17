@@ -315,22 +315,22 @@ class Tennis {
     const isDown = key => this.keysdown.includes(key.toLowerCase());
 
     if (isDown("w")) {
-      this.movePlayer("y", -2);
+      this.movePlayer("y", -5);
     }
     if (isDown("s")) {
-      this.movePlayer("y", 2);
+      this.movePlayer("y", 5);
     }
     if (isDown(" ")) {
       this.shoot();
     }
     if (isDown("a")) {
       if (this.status === "running") {
-        this.movePlayer("x", -2);
+        this.movePlayer("x", -5);
       }
     }
     if (isDown("d")) {
       if (this.status === "running") {
-        this.movePlayer("x", 2);
+        this.movePlayer("x", 5);
       }
     }
     if (isDown(" ")) {
@@ -343,7 +343,6 @@ class Tennis {
   }
 
   shoot(direction) {
-    console.log(direction);
     this.gameIo.emit("shoot", direction);
   }
 
@@ -356,7 +355,7 @@ class Tennis {
     document.onkeyup = e => {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
-    setInterval(e => this.inputHandler(e), 20);
+    setInterval(e => this.inputHandler(e), 50);
   }
 }
 

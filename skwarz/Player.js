@@ -79,7 +79,7 @@ class Player {
   }
 
   shoot(direction) {
-    const speed = 10;
+    const speed = 20;
     const width = 10;
     const height = 10;
     this.game.createProjectile(this, { direction, speed, width, height });

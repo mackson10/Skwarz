@@ -132,7 +132,7 @@ class SkwarzGame {
 
   startGame() {
     this.setStatus("starting");
-    this.loopTimer = setInterval(() => this.loopFunction(), 20);
+    this.loopTimer = setInterval(() => this.loopFunction(), 40);
   }
 
   loopFunction() {
