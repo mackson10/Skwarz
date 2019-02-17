@@ -15,7 +15,10 @@ class SkwarzGame {
     this.seed = Math.floor(Math.random() * 100000) + 1;
     this.gridSide = 20;
     this.maxRadius = 100 * this.gridSide;
-    //this.entities = {};
+    this.entities = {
+      projectiles: new Map()
+    };
+    this.projectilesCount = 0;
     this.setIo();
   }
 
@@ -45,6 +48,11 @@ class SkwarzGame {
     socket.on("movement", movement => {
       if (socket.player) {
         socket.player.move(movement);
+      }
+    });
+    socket.on("shoot", direction => {
+      if (socket.player && this.status === "running") {
+        socket.player.shoot(direction);
       }
     });
   }
@@ -110,8 +118,6 @@ class SkwarzGame {
       this.connectedPlayers.players
     );
 
-    //Array.from(this.connectedPlayers.players).forEach(([id, player]) => {});
-
     this.connectedPlayers.players.forEach(player => {
       const setupObject = {
         you: player.sendFormat(),
@@ -131,8 +137,24 @@ class SkwarzGame {
 
   loopFunction() {
     if (this.status === "starting") this.setStatus("running");
-
+    this.interactions();
     this.sendState();
+  }
+
+  interactions() {
+    Array.from(this.entities.projectiles).forEach(([_, projectile]) => {
+      const { position, direction, speed } = projectile;
+
+      const newPosition = { ...position };
+      newPosition.x += direction.x * speed;
+      newPosition.y += direction.y * speed;
+
+      if (!this.validPosition(newPosition)) {
+        this.entities.projectiles.delete(projectile.id);
+      } else {
+        projectile.position = newPosition;
+      }
+    });
   }
 
   sendState() {
@@ -140,17 +162,42 @@ class SkwarzGame {
       this.connectedPlayers.players,
       player => player.visible
     );
-
+    const formatedProjectiles = Array.from(this.entities.projectiles).map(
+      ([_, { position, id, direction }]) => {
+        return { position, id, direction };
+      }
+    );
     this.connectedPlayers.players.forEach(player => {
       const stateObject = {
         you: player.sendFormat(),
         players: formatedPlayers,
+        projectiles: formatedProjectiles,
         seed: this.seed
       };
 
       const socket = player.socket;
       socket.emit("state", stateObject);
     });
+  }
+
+  createProjectile(player, options) {
+    const { direction, width, height, speed } = options;
+    const firstPosition = {
+      x: player.position.x + speed * direction.x,
+      y: player.position.y + speed * direction.y,
+      width,
+      height
+    };
+
+    const newProjectile = {
+      id: ++this.projectilesCount,
+      owner: player,
+      direction,
+      position: firstPosition,
+      speed
+    };
+
+    this.entities.projectiles.set(newProjectile.id, newProjectile);
   }
 
   initializePositions() {

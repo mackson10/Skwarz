@@ -77,6 +77,14 @@ class Player {
 
     this.visible = visible;
   }
+
+  shoot(direction) {
+    const speed = 10;
+    const width = 10;
+    const height = 10;
+    this.game.createProjectile(this, { direction, speed, width, height });
+    this.lastShot = new Date().getTime();
+  }
 }
 
 module.exports = Player;

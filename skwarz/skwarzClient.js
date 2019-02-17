@@ -32,14 +32,20 @@ class Tennis {
   }
 
   canvasClick(e) {
-    console.log(e);
-
     switch (this.status) {
       case "not_on_queue":
         this.requestQueue();
         break;
       case "showing_score":
         this.reinit();
+      case "running":
+        const deltaX = e.layerX - this.canvas.width / 2;
+        const deltaY = e.layerY - this.canvas.height / 2;
+        const hypot = Math.hypot(deltaX, deltaY);
+        const x = deltaX / hypot;
+        const y = deltaY / hypot;
+
+        this.shoot({ x, y });
         break;
     }
   }
@@ -112,8 +118,8 @@ class Tennis {
     const ctx = this.ctx;
     const state = this.state;
 
-    const cWidth = 1060;
-    const cHeight = 660;
+    const cWidth = this.canvas.width;
+    const cHeight = this.canvas.height;
 
     ctx.clearRect(0, 0, cWidth, cHeight);
     ctx.fillStyle = "black";
@@ -163,6 +169,17 @@ class Tennis {
 
     state.players.forEach(player => {
       const { position } = player;
+      ctx.fillStyle = "black";
+      ctx.fillRect(
+        Math.trunc(position.x - center.x + cWidth / 2),
+        Math.trunc(position.y - center.y + cHeight / 2),
+        position.width + 1,
+        position.height + 1
+      );
+    });
+
+    state.projectiles.forEach(projectile => {
+      const { position } = projectile;
       ctx.fillStyle = "black";
       ctx.fillRect(
         Math.trunc(position.x - center.x + cWidth / 2),
@@ -298,28 +315,36 @@ class Tennis {
     const isDown = key => this.keysdown.includes(key.toLowerCase());
 
     if (isDown("w")) {
-      this.movePlayer("y", -1);
+      this.movePlayer("y", -2);
     }
     if (isDown("s")) {
-      this.movePlayer("y", 1);
+      this.movePlayer("y", 2);
     }
     if (isDown(" ")) {
       this.shoot();
     }
     if (isDown("a")) {
       if (this.status === "running") {
-        this.movePlayer("x", -1);
+        this.movePlayer("x", -2);
       }
     }
     if (isDown("d")) {
       if (this.status === "running") {
-        this.movePlayer("x", 1);
+        this.movePlayer("x", 2);
       }
+    }
+    if (isDown(" ")) {
+      //this.shoot();
     }
   }
 
   movePlayer(axis, delta) {
     this.gameIo.emit("movement", { axis, delta });
+  }
+
+  shoot(direction) {
+    console.log(direction);
+    this.gameIo.emit("shoot", direction);
   }
 
   initInputHandler() {
