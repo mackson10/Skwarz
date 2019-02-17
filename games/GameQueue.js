@@ -24,9 +24,8 @@ class GameQueue {
   queueRequest(req, res) {
     const ticket = {
       id: ++this.ticketsCount,
-      secret: "tennisQueueSecret#" + Math.random() * 1000000000000000000,
-      path: this.io.name,
-      port: this.app.serverPort
+      secret: "secret#" + Math.random() * 1000000000000000000,
+      path: this.io.name
     };
     this.tickets[ticket.id] = ticket;
     res.send(ticket);

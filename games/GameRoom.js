@@ -37,8 +37,12 @@ class Room {
   size() {
     return this.players.size;
   }
-  array() {
-    return Array.from(this.players).map(([_, player]) => player);
+  array(conditionFunction = () => true) {
+    const output = [];
+    Array.from(this.players).forEach(([_, player]) => {
+      if (conditionFunction(player)) output.push(player);
+    });
+    return output;
   }
 }
 module.exports = Room;

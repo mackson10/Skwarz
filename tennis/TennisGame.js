@@ -1,8 +1,7 @@
 GameRoom = require("../games/GameRoom");
 
 class TennisGame {
-  constructor(path, gameIo, ticketsArray) {
-    this.path = path;
+  constructor(gameIo, ticketsArray) {
     this.gameIo = gameIo;
     this.tickets = ticketsArray;
     this.minPlayers = 2;

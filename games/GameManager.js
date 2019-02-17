@@ -36,12 +36,10 @@ class GameManager {
   initGame(tickets) {
     const newGameId = ++this.gamesCount;
     const newGamePath = `${this.path}/${newGameId}`;
-    this.queueIo
-      .to(tickets.roomId)
-      .emit("start", { path: newGamePath, port: this.app.serverPort });
+    this.queueIo.to(tickets.roomId).emit("start", { path: newGamePath });
     this.currentGames.set(
       newGameId,
-      new this.Game(newGamePath, this.io.of(newGamePath), tickets.array)
+      new this.Game(this.io.of(newGamePath), tickets.array)
     );
   }
 }
