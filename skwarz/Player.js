@@ -1,3 +1,6 @@
+const Weapon = require("./Weapon");
+const weapons = require("./weapons");
+
 class Player {
   constructor(game, id, secret, socket) {
     this.game = game;
@@ -8,7 +11,6 @@ class Player {
     this.color = "";
     this.kills = 0;
     this.life = 100;
-    this.lastShot = 0;
     this.visible = true;
     this.position = {
       x: undefined,
@@ -16,6 +18,7 @@ class Player {
       width: undefined,
       height: undefined
     };
+    this.weapon = new Weapon(weapons.shotgun);
   }
 
   static sendFormatArray(mapOfPlayers, conditionFunction = () => true) {
@@ -24,6 +27,12 @@ class Player {
       if (conditionFunction(player)) output.push(player.sendFormat());
     });
     return output;
+  }
+
+  static interactions(mapOfPlayers) {
+    Array.from(mapOfPlayers).forEach(([_, player]) => {
+      player.standingOn();
+    });
   }
 
   sendFormat() {
@@ -69,7 +78,7 @@ class Player {
     return terrainArray;
   }
 
-  standingOn(blocks) {
+  standingOn(blocks = this.steppingOn(this.position)) {
     let visible = true;
     blocks.forEach(block => {
       visible = visible && block.name !== "bush";
@@ -78,12 +87,16 @@ class Player {
     this.visible = visible;
   }
 
+  hit(projectile) {
+    this.position.x++;
+  }
+
   shoot(direction) {
-    const speed = 20;
-    const width = 10;
-    const height = 10;
-    this.game.createProjectile(this, { direction, speed, width, height });
-    this.lastShot = new Date().getTime();
+    this.weapon.shoot(this, direction);
+  }
+
+  reload() {
+    this.weapon.reload();
   }
 }
 

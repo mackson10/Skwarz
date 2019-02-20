@@ -1,5 +1,8 @@
 GameRoom = require("../games/GameRoom");
 Player = require("./Player");
+Ring = require("./Ring");
+Projectile = require("./Projectile");
+
 blocks = require("./blocks");
 
 class SkwarzGame {
@@ -14,11 +17,15 @@ class SkwarzGame {
     this.status = "waiting players";
     this.seed = Math.floor(Math.random() * 100000) + 1;
     this.gridSide = 20;
-    this.maxRadius = 100 * this.gridSide;
+    this.maxGridRadius = 100;
+    this.spawnGridRadius = 80;
+    this.spawnRadius = this.spawnGridRadius * this.gridSide;
+    this.maxRadius = this.maxGridRadius * this.gridSide;
     this.entities = {
       projectiles: new Map()
     };
     this.projectilesCount = 0;
+    this.ring = new Ring(this);
     this.setIo();
   }
 
@@ -132,7 +139,7 @@ class SkwarzGame {
 
   startGame() {
     this.setStatus("starting");
-    this.loopTimer = setInterval(() => this.loopFunction(), 40);
+    this.loopTimer = setInterval(() => this.loopFunction(), 16);
   }
 
   loopFunction() {
@@ -142,19 +149,9 @@ class SkwarzGame {
   }
 
   interactions() {
-    Array.from(this.entities.projectiles).forEach(([_, projectile]) => {
-      const { position, direction, speed } = projectile;
-
-      const newPosition = { ...position };
-      newPosition.x += direction.x * speed;
-      newPosition.y += direction.y * speed;
-
-      if (!this.validPosition(newPosition)) {
-        this.entities.projectiles.delete(projectile.id);
-      } else {
-        projectile.position = newPosition;
-      }
-    });
+    Projectile.interactions(this.entities.projectiles, this);
+    this.ring.interaction();
+    Player.interactions(this.connectedPlayers.players);
   }
 
   sendState() {
@@ -162,11 +159,11 @@ class SkwarzGame {
       this.connectedPlayers.players,
       player => player.visible
     );
-    const formatedProjectiles = Array.from(this.entities.projectiles).map(
-      ([_, { position, id, direction }]) => {
-        return { position, id, direction };
-      }
+
+    const formatedProjectiles = Projectile.sendFormatArray(
+      this.entities.projectiles
     );
+
     this.connectedPlayers.players.forEach(player => {
       const stateObject = {
         you: player.sendFormat(),
@@ -181,30 +178,38 @@ class SkwarzGame {
   }
 
   createProjectile(player, options) {
-    const { direction, width, height, speed } = options;
+    const { direction, width, height, speed, range } = options;
     const firstPosition = {
-      x: player.position.x + speed * direction.x,
-      y: player.position.y + speed * direction.y,
+      x:
+        player.position.x +
+        player.position.width / 2 -
+        width / 2 +
+        speed * direction.x,
+      y:
+        player.position.y +
+        player.position.height / 2 -
+        height / 2 +
+        speed * direction.y,
       width,
       height
     };
 
-    const newProjectile = {
-      id: ++this.projectilesCount,
-      owner: player,
+    const projectileOptions = {
       direction,
       position: firstPosition,
-      speed
+      speed,
+      range
     };
 
+    const newProjectile = new Projectile(player, projectileOptions);
     this.entities.projectiles.set(newProjectile.id, newProjectile);
   }
 
   initializePositions() {
-    let x = -this.maxRadius;
+    let x = -this.spawnRadius;
     let y = 0;
-    let xInc = Math.trunc(this.maxRadius / 10);
-    let yInc = -Math.trunc(this.maxRadius / 10);
+    let xInc = Math.trunc(this.spawnRadius / 10);
+    let yInc = -Math.trunc(this.spawnRadius / 10);
 
     for (let player of this.connectedPlayers.array()) {
       player.position.width = this.gridSide - 4;
@@ -221,10 +226,10 @@ class SkwarzGame {
       x += xInc;
       y += yInc;
 
-      if (Math.abs(x) >= this.maxRadius) {
+      if (Math.abs(x) >= this.spawnRadius) {
         xInc *= -1;
       }
-      if (Math.abs(y) >= this.maxRadius) {
+      if (Math.abs(y) >= this.spawnRadius) {
         yInc *= -1;
       }
     }
@@ -252,6 +257,11 @@ class SkwarzGame {
   calculateTerrain(x, y) {
     const gridX = Math.floor(x / this.gridSide);
     const gridY = Math.floor(y / this.gridSide);
+
+    if (this.ring.reached(gridX, gridY)) {
+      return blocks.fire;
+    }
+
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 

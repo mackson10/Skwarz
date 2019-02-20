@@ -1,4 +1,4 @@
-class Tennis {
+class Skwarz {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
@@ -9,6 +9,9 @@ class Tennis {
     this.keysdown = [];
     this.ping = 0;
     this.gridSide = 20;
+    this.maxGridRadius = 100;
+    this.maxRadius = this.maxGridRadius * this.gridSide;
+    this.ring;
   }
 
   setStatus(status) {
@@ -99,18 +102,20 @@ class Tennis {
   }
 
   reinit() {
-    game = new Tennis(this.canvas);
+    game = new Skwarz(this.canvas);
   }
 
   setupGame(data) {
     this.setStatus("starting");
     this.seed = data.seed;
+    this.ring = new Ring(this);
     this.state = data;
   }
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.state = data;
+    this.ring.interaction();
     this.drawGame();
   }
 
@@ -287,6 +292,11 @@ class Tennis {
   calculateTerrain(x, y) {
     const gridX = Math.floor(x / this.gridSide);
     const gridY = Math.floor(y / this.gridSide);
+
+    if (this.ring.reached(gridX, gridY)) {
+      return blocks.fire;
+    }
+
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
@@ -315,22 +325,19 @@ class Tennis {
     const isDown = key => this.keysdown.includes(key.toLowerCase());
 
     if (isDown("w")) {
-      this.movePlayer("y", -5);
+      this.movePlayer("y", -3);
     }
     if (isDown("s")) {
-      this.movePlayer("y", 5);
-    }
-    if (isDown(" ")) {
-      this.shoot();
+      this.movePlayer("y", 3);
     }
     if (isDown("a")) {
       if (this.status === "running") {
-        this.movePlayer("x", -5);
+        this.movePlayer("x", -3);
       }
     }
     if (isDown("d")) {
       if (this.status === "running") {
-        this.movePlayer("x", 5);
+        this.movePlayer("x", 3);
       }
     }
     if (isDown(" ")) {
@@ -355,29 +362,9 @@ class Tennis {
     document.onkeyup = e => {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
-    setInterval(e => this.inputHandler(e), 50);
+    setInterval(e => this.inputHandler(e), 20);
   }
 }
 
 canvas = document.querySelector("canvas");
-//canvasWrapper = document.querySelector("#canvas_wrapper");
-
-let game = new Tennis(canvas);
-
-const blocks = {
-  dirt: {
-    name: "dirt",
-    solid: false,
-    color: "#fc9935"
-  },
-  wall: {
-    name: "wall",
-    solid: true,
-    color: "#3a1f1f"
-  },
-  bush: {
-    name: "bush",
-    solid: false,
-    color: "#428c24"
-  }
-};
+let game = new Skwarz(canvas);

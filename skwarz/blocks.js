@@ -1,17 +1,24 @@
-module.exports = {
+const blocks = {
   dirt: {
     name: "dirt",
     solid: false,
-    color: "brown"
+    color: "#f7ba51"
   },
   wall: {
     name: "wall",
     solid: true,
-    color: "grey"
+    color: "#110b1c"
   },
   bush: {
     name: "bush",
     solid: false,
-    color: "green"
+    color: "#4ca01e"
+  },
+  fire: {
+    name: "fire",
+    solid: false,
+    color: "orangered"
   }
 };
+
+module.exports = blocks;

@@ -7,7 +7,10 @@ module.exports = (app, io) => {
     room: { minPlayers: 2, maxPlayers: 10 },
     files: [
       { path: "/", fileName: __dirname + "/index.html" },
-      { path: "/skwarzClient.js", fileName: __dirname + "/skwarzClient.js" }
+      { path: "/skwarzClient.js", fileName: __dirname + "/skwarzClient.js" },
+      { path: "/blocks.js", fileName: __dirname + "/blocks.js" },
+      { path: "/Player.js", fileName: __dirname + "/Player.js" },
+      { path: "/Ring.js", fileName: __dirname + "/Ring.js" }
     ],
     gameClass: SkwarzGame
   };
