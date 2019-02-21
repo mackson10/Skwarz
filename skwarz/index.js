@@ -10,7 +10,8 @@ module.exports = (app, io) => {
       { path: "/skwarzClient.js", fileName: __dirname + "/skwarzClient.js" },
       { path: "/blocks.js", fileName: __dirname + "/blocks.js" },
       { path: "/Player.js", fileName: __dirname + "/Player.js" },
-      { path: "/Ring.js", fileName: __dirname + "/Ring.js" }
+      { path: "/Ring.js", fileName: __dirname + "/Ring.js" },
+      { path: "/mapObjects.js", fileName: __dirname + "/mapObjectsC.js" }
     ],
     gameClass: SkwarzGame
   };

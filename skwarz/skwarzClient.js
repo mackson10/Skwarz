@@ -9,7 +9,7 @@ class Skwarz {
     this.keysdown = [];
     this.ping = 0;
     this.gridSide = 20;
-    this.maxGridRadius = 100;
+    this.maxGridRadius = 500;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.ring;
   }
@@ -160,26 +160,21 @@ class Skwarz {
         const Ax = center.x - cWidth / 2 + x * gridSide;
         const Ay = center.y - cHeight / 2 + y * gridSide;
 
-        const block = this.calculateTerrain(Ax, Ay);
-        ctx.lineWidth = 0.7;
-        ctx.fillStyle = block.color;
-        ctx.fillRect(
+        const terrain = this.calculateTerrain(Ax, Ay);
+        this.drawTerrain(
+          terrain,
           firstGridX + x * gridSide,
-          firstGridY + y * gridSide,
-          gridSide,
-          gridSide
+          firstGridY + y * gridSide
         );
       }
     }
 
     state.players.forEach(player => {
       const { position } = player;
-      ctx.fillStyle = "black";
-      ctx.fillRect(
+      this.drawPlayer(
+        player,
         Math.trunc(position.x - center.x + cWidth / 2),
-        Math.trunc(position.y - center.y + cHeight / 2),
-        position.width + 1,
-        position.height + 1
+        Math.trunc(position.y - center.y + cHeight / 2)
       );
     });
 
@@ -193,10 +188,42 @@ class Skwarz {
         position.height + 1
       );
     });
+
+    const { position } = player;
+    this.drawPlayer(
+      player,
+      Math.trunc(position.x - center.x + cWidth / 2),
+      Math.trunc(position.y - center.y + cHeight / 2)
+    );
   }
 
-  drawPlayer(player) {
+  drawTerrain(terrain, x, y) {
     const ctx = this.ctx;
+    const gridSide = this.gridSide;
+
+    if (terrain.type === "block") {
+      ctx.fillStyle = terrain.color;
+      ctx.fillRect(x, y, gridSide, gridSide);
+    } else if (terrain.type === "object") {
+      ctx.fillStyle = blocks.dirt.color;
+      ctx.fillRect(x, y, gridSide, gridSide);
+      ctx.drawImage(terrain.image, x, y, gridSide, gridSide);
+    }
+
+    if (terrain.stroke) {
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, gridSide, gridSide);
+    }
+  }
+
+  drawPlayer(player, x, y) {
+    const { position } = player;
+    const ctx = this.ctx;
+    ctx.fillStyle = player.color;
+    if (player.visible === true)
+      ctx.fillRect(x, y, position.width + 1, position.height + 1);
+
+    ctx.strokeRect(x, y, position.width + 1, position.height + 1);
   }
 
   drawUI(action, data) {
@@ -309,10 +336,16 @@ class Skwarz {
 
     if (terrainValue > 4000) {
       return blocks.dirt;
-    } else if (terrainValue > 2000) {
+    } else if (terrainValue > 1000) {
       return blocks.bush;
-    } else {
+    } else if (terrainValue > 200) {
       return blocks.wall;
+    } else if (terrainValue > 150) {
+      return mapObjects.weapons.shotgun;
+    } else if (terrainValue > 100) {
+      return mapObjects.weapons.pistol;
+    } else {
+      return mapObjects.weapons.smg;
     }
   }
 

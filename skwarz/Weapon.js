@@ -4,7 +4,6 @@ class Weapon {
     this.capacity = options.capacity;
     this.shootCooldown = options.shootCooldown;
     this.reloadTime = options.reloadTime;
-    this.damage = 50;
 
     this.bullets = this.capacity;
     this.lastShot = 0;
@@ -13,6 +12,11 @@ class Weapon {
 
     this.projectile = options.projectile;
     this.shootFunction = options.shootFunction;
+  }
+
+  sendFormat() {
+    const { name, capacity, bullets, status } = this;
+    return { name, capacity, bullets, status };
   }
 
   shoot(player, direction) {

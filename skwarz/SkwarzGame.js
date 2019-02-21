@@ -2,6 +2,7 @@ GameRoom = require("../games/GameRoom");
 Player = require("./Player");
 Ring = require("./Ring");
 Projectile = require("./Projectile");
+mapObjects = require("./mapObjectsS");
 
 blocks = require("./blocks");
 
@@ -17,8 +18,8 @@ class SkwarzGame {
     this.status = "waiting players";
     this.seed = Math.floor(Math.random() * 100000) + 1;
     this.gridSide = 20;
-    this.maxGridRadius = 100;
-    this.spawnGridRadius = 80;
+    this.maxGridRadius = 500;
+    this.spawnGridRadius = 350;
     this.spawnRadius = this.spawnGridRadius * this.gridSide;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.entities = {
@@ -52,13 +53,18 @@ class SkwarzGame {
         this.leaveGame(socket.player);
       }
     });
+
     socket.on("movement", movement => {
-      if (socket.player) {
-        socket.player.move(movement);
+      if (socket.player && this.status === "running") {
+        socket.player.move(movement, socket.player.status === "alive");
       }
     });
     socket.on("shoot", direction => {
-      if (socket.player && this.status === "running") {
+      if (
+        socket.player &&
+        this.status === "running" &&
+        socket.player.status === "alive"
+      ) {
         socket.player.shoot(direction);
       }
     });
@@ -100,17 +106,23 @@ class SkwarzGame {
     if (this.status === "waiting players" && players.playersEnough()) {
       this.setStatus("waiting delayed");
     } else if (
-      (this.status === "waiting delayed" && players.isFull()) ||
-      new Date().getTime() - this.waitingDelayed >= this.waitingDelayedTime
+      this.status === "waiting delayed" &&
+      (players.isFull() ||
+        new Date().getTime() - this.waitingDelayed >= this.waitingDelayedTime)
     ) {
       this.setupGame();
     } else if (
       players.size() < 2 &&
-      !this.status === "waiting players" &&
-      !this.status === "waiting delayed"
+      this.status !== "waiting players" &&
+      this.status !== "waiting delayed"
     ) {
       this.endGame();
     }
+  }
+
+  endGame() {
+    const winner = this.connectedPlayers.array()[0];
+    this.gameIo.emit("winner", winner.sendFormat());
   }
 
   setupGame() {
@@ -157,7 +169,7 @@ class SkwarzGame {
   sendState() {
     const formatedPlayers = Player.sendFormatArray(
       this.connectedPlayers.players,
-      player => player.visible
+      player => player.visible && player.status === "alive"
     );
 
     const formatedProjectiles = Projectile.sendFormatArray(
@@ -166,10 +178,9 @@ class SkwarzGame {
 
     this.connectedPlayers.players.forEach(player => {
       const stateObject = {
-        you: player.sendFormat(),
+        you: { ...player.sendFormat(), weapon: player.weapon.sendFormat() },
         players: formatedPlayers,
-        projectiles: formatedProjectiles,
-        seed: this.seed
+        projectiles: formatedProjectiles
       };
 
       const socket = player.socket;
@@ -177,8 +188,27 @@ class SkwarzGame {
     });
   }
 
+  death(reason, victim, murder) {
+    victim.die(reason, murder);
+
+    const deathObj = {
+      reason: reason,
+      victim: { color: victim.color, name: victim.name }
+    };
+
+    if (reason === "player") {
+      murder.kills++;
+      deathObj.murder = { color: murder.color, name: murder.name };
+      deathObj.weapon = murder.weapon.name;
+      this.gameIo.emit("death", deathObj);
+    } else if (reason === "fire") {
+      this.gameIo.emit("death", deathObj);
+    }
+    this.checkConnected();
+  }
+
   createProjectile(player, options) {
-    const { direction, width, height, speed, range } = options;
+    const { direction, width, height, speed, range, damage } = options;
     const firstPosition = {
       x:
         player.position.x +
@@ -198,7 +228,8 @@ class SkwarzGame {
       direction,
       position: firstPosition,
       speed,
-      range
+      range,
+      damage
     };
 
     const newProjectile = new Projectile(player, projectileOptions);
@@ -274,10 +305,16 @@ class SkwarzGame {
 
     if (terrainValue > 4000) {
       return blocks.dirt;
-    } else if (terrainValue > 2000) {
+    } else if (terrainValue > 1000) {
       return blocks.bush;
-    } else {
+    } else if (terrainValue > 200) {
       return blocks.wall;
+    } else if (terrainValue > 150) {
+      return mapObjects.weapons.shotgun;
+    } else if (terrainValue > 100) {
+      return mapObjects.weapons.pistol;
+    } else {
+      return mapObjects.weapons.smg;
     }
   }
 }

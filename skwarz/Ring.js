@@ -3,12 +3,12 @@ class Ring {
     this.game = game;
     this.cx = 0;
     this.cy = 0;
-    this.radius = 100;
+    this.radius = game.maxGridRadius;
     this.nextStage = undefined;
     this.status = "stopped";
     this.lastMovement = new Date().getTime();
     this.minimumRadius = 10;
-    this.speed = 0.05;
+    this.speed = 0.02;
   }
 
   setStatus(status) {

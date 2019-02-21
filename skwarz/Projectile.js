@@ -1,11 +1,12 @@
 class Projectile {
-  constructor(player, { position, direction, speed, range }) {
+  constructor(player, { position, direction, speed, range, damage }) {
     this.owner = player;
     this.id = ++this.owner.game.projectilesCount;
     this.position = position;
     this.direction = direction;
     this.speed = speed;
     this.range = range;
+    this.damage = damage;
     this.displacement = 0;
   }
 
