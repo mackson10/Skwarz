@@ -10,9 +10,9 @@ class SkwarzGame {
   constructor(gameIo, ticketsArray) {
     this.gameIo = gameIo;
     this.tickets = ticketsArray;
-    this.waitingDelayedTime = 100;
+    this.waitingDelayedTime = 2000;
     this.connectedPlayers = new GameRoom({
-      minPlayers: 2,
+      minPlayers: 3,
       maxPlayers: ticketsArray.length
     });
     this.status = "waiting players";
@@ -26,6 +26,7 @@ class SkwarzGame {
       projectiles: new Map()
     };
     this.projectilesCount = 0;
+    this.deaths = [];
     this.ring = new Ring(this);
     this.setIo();
   }
@@ -83,6 +84,7 @@ class SkwarzGame {
         this,
         validTicket.id,
         validTicket.secret,
+        playerTicket.name,
         socket
       );
       validTicket.taken = true;
@@ -97,36 +99,63 @@ class SkwarzGame {
   }
 
   leaveGame(player) {
+    if (player.status === "alive") {
+      this.remainingPlayers--;
+    }
     this.connectedPlayers.leave(player);
     this.checkConnected();
   }
 
   checkConnected() {
-    const players = this.connectedPlayers;
-    if (this.status === "waiting players" && players.playersEnough()) {
-      this.setStatus("waiting delayed");
-    } else if (
-      this.status === "waiting delayed" &&
-      (players.isFull() ||
-        new Date().getTime() - this.waitingDelayed >= this.waitingDelayedTime)
-    ) {
-      this.setupGame();
-    } else if (
-      players.size() < 2 &&
-      this.status !== "waiting players" &&
-      this.status !== "waiting delayed"
-    ) {
-      this.endGame();
+    if (this.status === "waiting players") {
+      if (this.connectedPlayers.playersEnough())
+        this.setStatus("waiting delayed");
+    } else if (this.status === "waiting delayed") {
+      if (
+        this.connectedPlayers.isFull() ||
+        new Date().getTime() - this.waitingDelayed >= this.waitingDelayedTime
+      ) {
+        this.setupGame();
+      }
+    } else {
+      this.checkAlive();
     }
   }
 
-  endGame() {
-    const winner = this.connectedPlayers.array()[0];
-    this.gameIo.emit("winner", winner.sendFormat());
+  checkAlive() {
+    if (this.remainingPlayers < 2) {
+      const alivePlayers = this.connectedPlayers.array(
+        player => player.status === "alive"
+      );
+      this.endGame(alivePlayers[0]);
+    }
+  }
+
+  endGame(winner) {
+    clearInterval(this.loopTimer);
+
+    const formatedPlayers = Player.sendFormatArray(
+      this.connectedPlayers.players
+    );
+    const endGameObject = {
+      winner: winner && winner.sendFormat(),
+      formatedPlayers
+    };
+
+    this.connectedPlayers.players.forEach(player => {
+      endGameObject.you = {
+        ...player.sendFormat(),
+        weapon: player.weapon.sendFormat()
+      };
+
+      const socket = player.socket;
+      socket.emit("endGame", endGameObject);
+    });
   }
 
   setupGame() {
     this.setStatus("setting up");
+    this.remainingPlayers = this.connectedPlayers.size();
     this.initializePositions();
     this.sendSetup();
     setTimeout(() => this.startGame(), 3000);
@@ -137,13 +166,13 @@ class SkwarzGame {
       this.connectedPlayers.players
     );
 
-    this.connectedPlayers.players.forEach(player => {
-      const setupObject = {
-        you: player.sendFormat(),
-        players: formatedPlayers,
-        seed: this.seed
-      };
+    const setupObject = {
+      players: formatedPlayers,
+      seed: this.seed
+    };
 
+    this.connectedPlayers.players.forEach(player => {
+      setupObject.you = player.sendFormat();
       const socket = player.socket;
       socket.emit("setup", setupObject);
     });
@@ -162,8 +191,11 @@ class SkwarzGame {
 
   interactions() {
     Projectile.interactions(this.entities.projectiles, this);
+    Player.interactions(
+      this.connectedPlayers.array(player => player.status === "alive")
+    );
     this.ring.interaction();
-    Player.interactions(this.connectedPlayers.players);
+    this.checkAlive();
   }
 
   sendState() {
@@ -176,11 +208,16 @@ class SkwarzGame {
       this.entities.projectiles
     );
 
+    const stateObject = {
+      players: formatedPlayers,
+      remainingPlayers: this.remainingPlayers,
+      projectiles: formatedProjectiles
+    };
+
     this.connectedPlayers.players.forEach(player => {
-      const stateObject = {
-        you: { ...player.sendFormat(), weapon: player.weapon.sendFormat() },
-        players: formatedPlayers,
-        projectiles: formatedProjectiles
+      stateObject.you = {
+        ...player.sendFormat(),
+        weapon: player.weapon.sendFormat()
       };
 
       const socket = player.socket;
@@ -189,12 +226,13 @@ class SkwarzGame {
   }
 
   death(reason, victim, murder) {
-    victim.die(reason, murder);
-
     const deathObj = {
       reason: reason,
       victim: { color: victim.color, name: victim.name }
     };
+
+    victim.die(reason, murder);
+    this.remainingPlayers--;
 
     if (reason === "player") {
       murder.kills++;
@@ -204,7 +242,8 @@ class SkwarzGame {
     } else if (reason === "fire") {
       this.gameIo.emit("death", deathObj);
     }
-    this.checkConnected();
+    this.deaths.push(deathObj);
+    this.checkAlive();
   }
 
   createProjectile(player, options) {

@@ -12,6 +12,7 @@ class Skwarz {
     this.maxGridRadius = 500;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.ring;
+    this.deaths = [];
   }
 
   setStatus(status) {
@@ -54,10 +55,14 @@ class Skwarz {
   }
 
   requestQueue() {
+    this.name = localStorage.skw_name;
+    if (!this.name) {
+      this.name = prompt("choose a name") || "nameless";
+    }
     axios.get("/skwarz/queue").then(resp => {
       this.queueIo = io.connect(window.location.origin + resp.data.path);
-      this.ticket = resp.data;
-      this.queueIo.emit("confirm", resp.data);
+      this.ticket = { ...resp.data, name: this.name };
+      this.queueIo.emit("confirm", this.ticket);
       this.setQueueIo();
     });
     this.setStatus("queue_requested");
@@ -80,20 +85,21 @@ class Skwarz {
     this.gameIo.on("setup", data => this.setupGame(data));
     this.gameIo.on("state", data => this.updateState(data));
     this.gameIo.on("endGame", data => this.endGame(data));
+    this.gameIo.on("death", data => this.deaths.push(data));
   }
 
   endGame(endState) {
+    this.state = endState;
     const winner = endState.winner;
     this.setStatus("end_game");
     let endMessage = "";
-    if (winner.pid === this[this.myRole].id) {
-      endMessage = "You won! Congrats!";
+    if (winner.id === this.ticket.id) {
+      endMessage = "You are the winner!";
     } else {
-      endMessage = "You lost, keep training!";
+      endMessage = winner.name + " is the winner.";
     }
 
     this.gameIo.disconnect();
-    this.drawUI(null, "Starting Game");
     this.drawUI(null, endMessage);
     this.scoreTimer = setTimeout(() => {
       this.setStatus("showing_score");
@@ -109,6 +115,7 @@ class Skwarz {
     this.setStatus("starting");
     this.seed = data.seed;
     this.ring = new Ring(this);
+    this.ring.interaction();
     this.state = data;
   }
 
@@ -117,199 +124,6 @@ class Skwarz {
     this.state = data;
     this.ring.interaction();
     this.drawGame();
-  }
-
-  drawGame() {
-    const ctx = this.ctx;
-    const state = this.state;
-
-    const cWidth = this.canvas.width;
-    const cHeight = this.canvas.height;
-
-    ctx.clearRect(0, 0, cWidth, cHeight);
-    ctx.fillStyle = "black";
-
-    const gridSide = this.gridSide;
-
-    const gridWidth = cWidth / gridSide + 1;
-    const gridHeight = cHeight / gridSide + 1;
-
-    const player = state.you;
-    const center = {
-      x: player.position.x + gridSide / 2,
-      y: player.position.y + gridSide / 2
-    };
-
-    let firstGridX = 0;
-    if (player.position.x >= 0) {
-      firstGridX = -(player.position.x % gridSide);
-    } else {
-      firstGridX =
-        -(gridSide - (Math.abs(player.position.x) % gridSide)) % gridSide;
-    }
-
-    let firstGridY = 0;
-    if (player.position.y >= 0) {
-      firstGridY = -(player.position.y % gridSide);
-    } else {
-      firstGridY =
-        -(gridSide - (Math.abs(player.position.y) % gridSide)) % gridSide;
-    }
-    for (let x = 0; x <= gridWidth; x++) {
-      for (let y = 0; y <= gridHeight; y++) {
-        const Ax = center.x - cWidth / 2 + x * gridSide;
-        const Ay = center.y - cHeight / 2 + y * gridSide;
-
-        const terrain = this.calculateTerrain(Ax, Ay);
-        this.drawTerrain(
-          terrain,
-          firstGridX + x * gridSide,
-          firstGridY + y * gridSide
-        );
-      }
-    }
-
-    state.players.forEach(player => {
-      const { position } = player;
-      this.drawPlayer(
-        player,
-        Math.trunc(position.x - center.x + cWidth / 2),
-        Math.trunc(position.y - center.y + cHeight / 2)
-      );
-    });
-
-    state.projectiles.forEach(projectile => {
-      const { position } = projectile;
-      ctx.fillStyle = "black";
-      ctx.fillRect(
-        Math.trunc(position.x - center.x + cWidth / 2),
-        Math.trunc(position.y - center.y + cHeight / 2),
-        position.width + 1,
-        position.height + 1
-      );
-    });
-
-    const { position } = player;
-    this.drawPlayer(
-      player,
-      Math.trunc(position.x - center.x + cWidth / 2),
-      Math.trunc(position.y - center.y + cHeight / 2)
-    );
-  }
-
-  drawTerrain(terrain, x, y) {
-    const ctx = this.ctx;
-    const gridSide = this.gridSide;
-
-    if (terrain.type === "block") {
-      ctx.fillStyle = terrain.color;
-      ctx.fillRect(x, y, gridSide, gridSide);
-    } else if (terrain.type === "object") {
-      ctx.fillStyle = blocks.dirt.color;
-      ctx.fillRect(x, y, gridSide, gridSide);
-      ctx.drawImage(terrain.image, x, y, gridSide, gridSide);
-    }
-
-    if (terrain.stroke) {
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, gridSide, gridSide);
-    }
-  }
-
-  drawPlayer(player, x, y) {
-    const { position } = player;
-    const ctx = this.ctx;
-    ctx.fillStyle = player.color;
-    if (player.visible === true)
-      ctx.fillRect(x, y, position.width + 1, position.height + 1);
-
-    ctx.strokeRect(x, y, position.width + 1, position.height + 1);
-  }
-
-  drawUI(action, data) {
-    const ctx = this.ctx;
-
-    ctx.font = "30px Arial";
-    ctx.textAlign = "center";
-
-    switch (action) {
-      case "RunningGame":
-        ctx.fillStyle = "black";
-
-        ctx.fillText(this.myRole === "P1" ? "You" : "P1", 440, 40);
-        ctx.fillText(
-          this.state.players[this.P1.id].gameInfo.points + " Pts",
-          440,
-          70
-        );
-        ctx.fillText(
-          this.state.players[this.P1.id].gameInfo.lifes + " lifes",
-          440,
-          100
-        );
-
-        ctx.fillText(this.myRole === "P2" ? "You" : "P2", 440, 410);
-        ctx.fillText(
-          this.state.players[this.P2.id].gameInfo.points + " Pts",
-          440,
-          440
-        );
-
-        ctx.fillText(
-          this.state.players[this.P2.id].gameInfo.lifes + " lifes",
-          440,
-          470
-        );
-        break;
-      case "endScreen":
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(0, 0, 500, 500);
-        ctx.fillStyle = "black";
-        let startX = 150;
-        let startY = 240;
-
-        ctx.fillText("Score", 250, startY - 70);
-
-        ctx.fillText(this.myRole === "P1" ? "You" : "P1", startX, startY);
-        ctx.fillText(
-          this.state.players[this.P1.id].gameInfo.points + " Pts",
-          startX,
-          startY + 70
-        );
-        ctx.fillText(
-          this.state.players[this.P1.id].gameInfo.lifes + " lifes",
-          startX,
-          startY + 30
-        );
-        ctx.fillStyle = "black";
-        startX += 200;
-        startY += 0;
-
-        ctx.fillText(this.myRole === "P2" ? "You" : "P2", startX, startY);
-        ctx.fillText(
-          this.state.players[this.P2.id].gameInfo.points + " Pts",
-          startX,
-          startY + 70
-        );
-        ctx.fillText(
-          this.state.players[this.P2.id].gameInfo.lifes + " lifes",
-          startX,
-          startY + 30
-        );
-        ctx.fillText("Click to continue ", 250, startY + 130);
-        break;
-      default:
-        ctx.clearRect(0, 0, 500, 500);
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(20, 200, 460, 90);
-        ctx.lineWidth = 2;
-        ctx.strokeWidth = "brown";
-        ctx.strokeRect(20, 200, 460, 90);
-
-        ctx.fillStyle = "black";
-        ctx.fillText(data, 250, 250);
-        break;
-    }
   }
 
   validPosition(x, y) {
@@ -387,17 +201,236 @@ class Skwarz {
   }
 
   initInputHandler() {
-    document.onkeydown = e => {
+    this.canvas.onblur = e => {
+      this.keysdown = [];
+    };
+
+    this.canvas.onkeydown = e => {
       if (this.keysdown.indexOf(e.key.toLowerCase()) < 0) {
         this.keysdown.push(e.key.toLowerCase());
       }
     };
-    document.onkeyup = e => {
+    this.canvas.onkeyup = e => {
       this.keysdown = this.keysdown.filter(k => k != e.key.toLowerCase());
     };
     setInterval(e => this.inputHandler(e), 20);
   }
+
+  drawGame() {
+    const ctx = this.ctx;
+    const state = this.state;
+    const me = state.you;
+    const gridSide = this.gridSide;
+    const cWidth = this.canvas.width;
+    const cHeight = this.canvas.height;
+
+    this.drawMap();
+
+    state.players.forEach(player => {
+      this.drawPlayer(player);
+    });
+
+    state.projectiles.forEach(projectile => {
+      const { position } = projectile;
+      ctx.fillStyle = "black";
+      ctx.fillRect(
+        Math.trunc(position.x - me.position.x - gridSide / 2 + cWidth / 2),
+        Math.trunc(position.y - me.position.y - gridSide / 2 + cHeight / 2),
+        position.width + 1,
+        position.height + 1
+      );
+    });
+
+    this.drawPlayer(me);
+
+    this.drawUI("running_interface");
+  }
+
+  drawMap() {
+    const ctx = this.ctx;
+    const state = this.state;
+    const player = state.you;
+    const gridSide = this.gridSide;
+    const cWidth = this.canvas.width;
+    const cHeight = this.canvas.height;
+
+    ctx.clearRect(0, 0, cWidth, cHeight);
+    ctx.fillStyle = "black";
+
+    const gridWidth = cWidth / gridSide + 1;
+    const gridHeight = cHeight / gridSide + 1;
+
+    const center = {
+      x: player.position.x + gridSide / 2,
+      y: player.position.y + gridSide / 2
+    };
+
+    let firstGridX = 0;
+    if (player.position.x >= 0) {
+      firstGridX = -(player.position.x % gridSide);
+    } else {
+      firstGridX =
+        -(gridSide - (Math.abs(player.position.x) % gridSide)) % gridSide;
+    }
+
+    let firstGridY = 0;
+    if (player.position.y >= 0) {
+      firstGridY = -(player.position.y % gridSide);
+    } else {
+      firstGridY =
+        -(gridSide - (Math.abs(player.position.y) % gridSide)) % gridSide;
+    }
+    for (let x = 0; x <= gridWidth; x++) {
+      for (let y = 0; y <= gridHeight; y++) {
+        const Ax = center.x - cWidth / 2 + x * gridSide;
+        const Ay = center.y - cHeight / 2 + y * gridSide;
+
+        const terrain = this.calculateTerrain(Ax, Ay);
+        this.drawTerrain(
+          terrain,
+          firstGridX + x * gridSide,
+          firstGridY + y * gridSide
+        );
+      }
+    }
+  }
+
+  drawTerrain(terrain, x, y) {
+    const ctx = this.ctx;
+    const gridSide = this.gridSide;
+
+    if (terrain.type === "block") {
+      ctx.fillStyle = terrain.color;
+      ctx.fillRect(x, y, gridSide, gridSide);
+    } else if (terrain.type === "object") {
+      ctx.fillStyle = blocks.dirt.color;
+      ctx.fillRect(x, y, gridSide, gridSide);
+      ctx.drawImage(terrain.image, x, y, gridSide, gridSide);
+    }
+
+    if (terrain.stroke) {
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, gridSide, gridSide);
+    }
+  }
+
+  drawPlayer(player) {
+    const gridSide = this.gridSide;
+    const cWidth = this.canvas.width;
+    const cHeight = this.canvas.height;
+    const me = this.state.you;
+    const ctx = this.ctx;
+    const { position } = player;
+    const x = Math.trunc(
+      position.x - me.position.x - gridSide / 2 + cWidth / 2
+    );
+    const y = Math.trunc(
+      position.y - me.position.y - gridSide / 2 + cHeight / 2
+    );
+
+    ctx.fillStyle = player.color;
+    if (player.visible === true)
+      ctx.fillRect(x, y, position.width + 1, position.height + 1);
+
+    ctx.strokeRect(x, y, position.width + 1, position.height + 1);
+  }
+
+  drawUI(action, data) {
+    const ctx = this.ctx;
+    const state = this.state;
+    const me = state && state.you;
+    const cWidth = this.canvas.width;
+    const cHeight = this.canvas.height;
+
+    switch (action) {
+      case "running_interface":
+        ctx.fillStyle = "black";
+        ctx.textAlign = "left";
+        ctx.font = "20px monospace";
+        if (me.status === "alive") {
+          ctx.fillText(
+            `${me.weapon.name}  ${me.weapon.bullets}/${me.weapon.capacity}   ${
+              me.weapon.status
+            }`,
+            cWidth - 320,
+            cHeight - 40
+          );
+          ctx.fillStyle = "green";
+          ctx.fillRect(cWidth - 330, cHeight - 30, state.you.life * 3, 20);
+          ctx.fillStyle = "black";
+          ctx.fillText("life", cWidth - 330, cHeight - 12);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cWidth - 330, cHeight - 30, 300, 20);
+        } else if (me.status === "expectating") {
+          ctx.fillText("expectating", cWidth - 220, cHeight - 30);
+        }
+
+        ctx.fillText(`players: ${state.remainingPlayers}`, cWidth - 170, 40);
+        ctx.fillText(`your kills: ${me.kills}`, cWidth - 170, 60);
+
+        ctx.font = "20px monospace";
+        this.deaths.slice(-3).forEach((death, i) => {
+          const pos = { x: 30, y: (i + 1) * 22 + 30 };
+          if (death.reason === "fire") {
+            ctx.fillStyle = "yellow";
+            ctx.fillText("🔥", pos.x, pos.y);
+            ctx.fillStyle = death.victim.color;
+            ctx.fillText(death.victim.name, (pos.x += 25), pos.y);
+          } else if (death.reason === "player") {
+            ctx.fillStyle = death.murder.color;
+            ctx.fillText(death.murder.name, pos.x, pos.y);
+
+            ctx.drawImage(
+              mapObjects.weapons[death.weapon].image,
+              (pos.x += ctx.measureText(death.murder.name).width + 5),
+              pos.y - 20,
+              20,
+              20
+            );
+
+            ctx.fillStyle = death.victim.color;
+            ctx.fillText(death.victim.name, (pos.x += 25), pos.y);
+          }
+        });
+
+        break;
+      case "endScreen":
+        ctx.font = "30px Arial";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "lightblue";
+
+        const pos = { x: cWidth / 2, y: 0.3 * cHeight };
+
+        ctx.fillRect(0, 0, cWidth, cHeight);
+        ctx.fillStyle = "black";
+        ctx.fillText("You placed #" + state.you.place, pos.x, pos.y);
+        ctx.fillText("Stats", cWidth / 2, (pos.y += 80));
+        ctx.fillText("Kills: " + state.you.kills, pos.x, (pos.y += 40));
+        ctx.fillText(
+          "Damage dealt: " + state.you.damageDealt,
+          pos.x,
+          (pos.y += 40)
+        );
+        ctx.fillText(
+          "Damage suffered: " + state.you.damageSuffered,
+          pos.x,
+          (pos.y += 40)
+        );
+
+        ctx.fillText("Click to continue ", pos.x, (pos.y += 100));
+
+        break;
+      default:
+        ctx.font = "30px Arial";
+        ctx.textAlign = "center";
+        ctx.clearRect(0, 0, cWidth, cHeight);
+        ctx.fillStyle = "black";
+        ctx.fillText(data, cWidth / 2, cHeight / 2);
+        break;
+    }
+  }
 }
 
 canvas = document.querySelector("canvas");
+canvas.par;
 let game = new Skwarz(canvas);

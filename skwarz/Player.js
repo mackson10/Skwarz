@@ -2,12 +2,12 @@ const Weapon = require("./Weapon");
 const weapons = require("./weapons");
 
 class Player {
-  constructor(game, id, secret, socket) {
+  constructor(game, id, secret, name, socket) {
     this.game = game;
     this.id = id;
+    this.name = name;
     this.secret = secret;
     this.socket = socket;
-    this.name = "";
     this.color = "#" + (Math.trunc(Math.random() * 16 ** 6) - 1).toString(16);
     this.kills = 0;
     this.life = 100;
@@ -21,6 +21,9 @@ class Player {
     this.weapon = new Weapon(weapons.shotgun);
     this.lastDamage = 0;
     this.status = "alive";
+    this.place = 1;
+    this.damageDealt = 0;
+    this.damageSuffered = 0;
   }
 
   static sendFormatArray(mapOfPlayers, conditionFunction = () => true) {
@@ -31,25 +34,43 @@ class Player {
     return output;
   }
 
-  static interactions(mapOfPlayers) {
-    Array.from(mapOfPlayers).forEach(([_, player]) => {
+  static interactions(players) {
+    const now = new Date().getTime();
+
+    players.forEach(player => {
       player.standingOn();
-      if (new Date().getTime() - this.lastDamage >= 10000) {
-        this.increaseLife(0.1);
+      if (now - player.lastDamage >= 10000) {
+        player.increaseLife(0.1);
       }
     });
   }
 
   sendFormat() {
-    const { id, name, color, kills, life, position, visible } = this;
-    return {
+    const {
       id,
       name,
       color,
       kills,
       life,
       position,
-      visible
+      visible,
+      status,
+      place,
+      damageDealt,
+      damageSuffered
+    } = this;
+    return {
+      id,
+      status,
+      name,
+      color,
+      kills,
+      life,
+      position,
+      visible,
+      place,
+      damageDealt,
+      damageSuffered
     };
   }
 
@@ -58,7 +79,11 @@ class Player {
     newPosition[movement.axis] += movement.delta;
     const steppingOn = this.steppingOn(newPosition);
 
-    if (!steppingOn.find(block => block.solid) || !validate) {
+    if (
+      !steppingOn.find(block => block.solid) ||
+      this.status !== "alive" ||
+      !validate
+    ) {
       this.position = newPosition;
     }
   }
@@ -104,6 +129,13 @@ class Player {
   increaseLife(delta) {
     this.life += delta;
 
+    if (this.life > 100) {
+      this.life = 100;
+    }
+    if (this.life < 0) {
+      this.life = 0;
+    }
+
     if (delta < 0) {
       this.lastDamage = new Date().getTime();
     }
@@ -114,11 +146,14 @@ class Player {
   }
 
   burn() {
+    this.damageSuffered += 0.1;
     this.increaseLife(-0.1);
     if (this.life <= 0) this.game.death("fire", this);
   }
 
   hit(projectile) {
+    this.damageSuffered += projectile.damage;
+    projectile.owner.damageDealt += projectile.damage;
     this.increaseLife(-projectile.damage);
     if (this.life <= 0) {
       this.game.death("player", this, projectile.owner);
@@ -132,6 +167,7 @@ class Player {
     if (murder) {
       endGameObj.murder = { name: murder.name, color: murder.color };
     }
+    this.place = this.game.remainingPlayers;
     this.socket.emit("gameOver", endGameObj);
     this.color = "white";
     this.status = "expectating";

@@ -33,15 +33,17 @@ class Projectile {
         projectile.displacement += speed;
       }
 
-      game.connectedPlayers.array().forEach(player => {
-        if (
-          player !== projectile.owner &&
-          projectile.checkCollision(player.position)
-        ) {
-          player.hit(projectile);
-          projectile.destroy();
-        }
-      });
+      game.connectedPlayers
+        .array(player => player.status === "alive")
+        .forEach(player => {
+          if (
+            player !== projectile.owner &&
+            projectile.checkCollision(player.position)
+          ) {
+            player.hit(projectile);
+            projectile.destroy();
+          }
+        });
 
       if (projectile.displacement >= projectile.range) {
         projectile.destroy();
