@@ -8,7 +8,8 @@ class GameManager {
     this.options = options;
     const queueOptions = {
       path: this.path,
-      room: options.room
+      room: options.room,
+      waitingDelayedTime: options.queueDelayedTime
     };
     this.Game = options.gameClass;
     this.queueIo = io.of(this.path + "/queue");

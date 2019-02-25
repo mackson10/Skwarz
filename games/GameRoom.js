@@ -1,13 +1,13 @@
 class Room {
   static available(mapOfRooms) {
     const result = Array.from(mapOfRooms).find(([_, room]) => {
-      return !room.playersEnough();
+      return !room.isFull();
     });
     return result && result[1];
   }
 
   constructor(options) {
-    this.status = options.status;
+    this.status = "waiting";
     this.maxPlayers = options.maxPlayers;
     this.minPlayers = options.minPlayers;
     this.id = options.id;

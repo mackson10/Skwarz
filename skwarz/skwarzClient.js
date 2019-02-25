@@ -407,12 +407,12 @@ class Skwarz {
         ctx.fillText("Stats", cWidth / 2, (pos.y += 80));
         ctx.fillText("Kills: " + state.you.kills, pos.x, (pos.y += 40));
         ctx.fillText(
-          "Damage dealt: " + state.you.damageDealt,
+          "Damage dealt: " + Math.trunc(state.you.damageDealt),
           pos.x,
           (pos.y += 40)
         );
         ctx.fillText(
-          "Damage suffered: " + state.you.damageSuffered,
+          "Damage suffered: " + Math.trunc(state.you.damageSuffered),
           pos.x,
           (pos.y += 40)
         );

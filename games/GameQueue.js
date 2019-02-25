@@ -10,8 +10,11 @@ class GameQueue {
     this.tickets = {};
     this.ticketsCount = 0;
     this.roomOptions = options.room;
+    this.waitingDelayedTime = options.waitingDelayedTime;
+    this.waitingDelayed = 0;
     this.io = io;
     this.initGame = initGame;
+    this.status = "waiting";
     this.setRoutes();
     this.setIo();
   }
@@ -64,7 +67,17 @@ class GameQueue {
   }
 
   checkRoom(room) {
-    if (room.playersEnough()) {
+    if (room.status === "waiting" && room.playersEnough()) {
+      room.status = "waiting delayed";
+      room.delayedTime = new Date().getTime();
+      setTimeout(() => this.checkRoom(room), this.waitingDelayedTime);
+    }
+
+    if (
+      room.status === "waiting delayed" &&
+      (new Date().getTime() - room.delayedTime >= this.waitingDelayedTime ||
+        room.isFull())
+    ) {
       const roomTickets = {
         roomId: room.id,
         array: room.array().map(player => ({ ...player.ticket }))
@@ -79,6 +92,7 @@ class GameQueue {
     const theTicket = this.tickets[ticket.id];
     if (theTicket && theTicket.secret === ticket.secret) {
       let playerRoom = GameRoom.available(this.queueRooms);
+
       if (!playerRoom) {
         const playerRoomId = ++this.queueRoomsCount;
         playerRoom = new GameRoom({

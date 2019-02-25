@@ -10,16 +10,16 @@ class SkwarzGame {
   constructor(gameIo, ticketsArray) {
     this.gameIo = gameIo;
     this.tickets = ticketsArray;
-    this.waitingDelayedTime = 2000;
+    this.waitingDelayedTime = 1000;
     this.connectedPlayers = new GameRoom({
-      minPlayers: 3,
+      minPlayers: 2,
       maxPlayers: ticketsArray.length
     });
     this.status = "waiting players";
     this.seed = Math.floor(Math.random() * 100000) + 1;
     this.gridSide = 20;
-    this.maxGridRadius = 500;
-    this.spawnGridRadius = 350;
+    this.maxGridRadius = 300;
+    this.spawnGridRadius = 250;
     this.spawnRadius = this.spawnGridRadius * this.gridSide;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.entities = {
@@ -180,15 +180,20 @@ class SkwarzGame {
 
   startGame() {
     this.setStatus("starting");
+    this.maior = 0;
     this.loopTimer = setInterval(() => this.loopFunction(), 16);
   }
 
   loopFunction() {
+    const lastTime = new Date().getTime();
     if (this.status === "starting") this.setStatus("running");
     this.interactions();
     this.sendState();
+    this.maior =
+      new Date().getTime() - lastTime >= this.maior
+        ? new Date().getTime() - lastTime
+        : this.maior;
   }
-
   interactions() {
     Projectile.interactions(this.entities.projectiles, this);
     Player.interactions(

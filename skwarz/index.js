@@ -4,7 +4,7 @@ const GameManager = require("../games/GameManager");
 module.exports = (app, io) => {
   const options = {
     path: "/skwarz",
-    room: { minPlayers: 3, maxPlayers: 10 },
+    room: { minPlayers: 2, maxPlayers: 10 },
     files: [
       { path: "/", fileName: __dirname + "/index.html" },
       { path: "/skwarzClient.js", fileName: __dirname + "/skwarzClient.js" },
@@ -13,7 +13,8 @@ module.exports = (app, io) => {
       { path: "/Ring.js", fileName: __dirname + "/Ring.js" },
       { path: "/mapObjects.js", fileName: __dirname + "/mapObjectsC.js" }
     ],
-    gameClass: SkwarzGame
+    gameClass: SkwarzGame,
+    queueDelayedTime: 10000
   };
 
   new GameManager(app, io, options);
