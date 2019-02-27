@@ -9,6 +9,7 @@ class Ring {
     this.lastMovement = new Date().getTime();
     this.minimumRadius = 10;
     this.speed = 0.02;
+    this.stopTime = 25000;
   }
 
   setStatus(status) {
@@ -36,7 +37,7 @@ class Ring {
       return;
     } else if (this.status === "moving") {
       this.move();
-    } else if (new Date().getTime() - this.lastMovement >= 20000) {
+    } else if (new Date().getTime() - this.lastMovement >= this.stopTime) {
       this.setStatus("moving");
     }
   }

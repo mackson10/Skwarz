@@ -216,7 +216,8 @@ class SkwarzGame {
     const stateObject = {
       players: formatedPlayers,
       remainingPlayers: this.remainingPlayers,
-      projectiles: formatedProjectiles
+      projectiles: formatedProjectiles,
+      ringLastMovement: this.ring.lastMovement
     };
 
     this.connectedPlayers.players.forEach(player => {
@@ -337,15 +338,15 @@ class SkwarzGame {
       return blocks.fire;
     }
 
-    const terrainValue =
-      Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
-
     if (
       Math.abs(gridX) % ((this.seed % 50) + 25) < 5 &&
       Math.abs(gridY) % ((this.seed % 50) + 25) < 2
     ) {
       return blocks.wall;
     }
+
+    const terrainValue =
+      Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
     if (terrainValue > 4000) {
       return blocks.dirt;

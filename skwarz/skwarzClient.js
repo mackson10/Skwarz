@@ -9,7 +9,7 @@ class Skwarz {
     this.keysdown = [];
     this.ping = 0;
     this.gridSide = 20;
-    this.maxGridRadius = 500;
+    this.maxGridRadius = 300;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.ring;
     this.deaths = [];
@@ -122,6 +122,7 @@ class Skwarz {
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.state = data;
+    this.ring.lastMovement = data.ringLastMovement;
     this.ring.interaction();
     this.drawGame();
   }
@@ -138,15 +139,15 @@ class Skwarz {
       return blocks.fire;
     }
 
-    const terrainValue =
-      Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
-
     if (
       Math.abs(gridX) % ((this.seed % 50) + 25) < 5 &&
       Math.abs(gridY) % ((this.seed % 50) + 25) < 2
     ) {
       return blocks.wall;
     }
+
+    const terrainValue =
+      Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
     if (terrainValue > 4000) {
       return blocks.dirt;
