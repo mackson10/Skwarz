@@ -1,5 +1,21 @@
+const weapons = require("./weapons");
+
 class Projectile {
-  constructor(player, { position, direction, speed, range, damage }) {
+  constructor(
+    player,
+    {
+      position,
+      direction,
+      speed,
+      range,
+      damage,
+      weaponName,
+      hasStopFunction,
+      friendlyFire,
+      color
+    }
+  ) {
+    this.weaponName = weaponName;
     this.owner = player;
     this.id = ++this.owner.game.projectilesCount;
     this.position = position;
@@ -8,12 +24,15 @@ class Projectile {
     this.range = range;
     this.damage = damage;
     this.displacement = 0;
+    this.hasStopFunction = hasStopFunction;
+    this.friendlyFire = friendlyFire;
+    this.color = color;
   }
 
   static sendFormatArray(mapOfProjectiles) {
     return Array.from(mapOfProjectiles).map(
-      ([_, { position, id, direction }]) => {
-        return { position, id, direction };
+      ([_, { position, id, direction, color }]) => {
+        return { position, id, direction, color };
       }
     );
   }
@@ -27,7 +46,9 @@ class Projectile {
       newPosition.y += direction.y * speed;
 
       if (!game.validPosition(newPosition)) {
-        projectile.destroy();
+        if (projectile.speed > 1)
+          projectile.speed = Math.trunc(projectile.speed / 2);
+        else projectile.stop();
       } else {
         projectile.position = newPosition;
         projectile.displacement += speed;
@@ -37,18 +58,32 @@ class Projectile {
         .array(player => player.status === "alive")
         .forEach(player => {
           if (
-            player !== projectile.owner &&
+            (player !== projectile.owner || projectile.friendlyFire) &&
             projectile.checkCollision(player.position)
           ) {
-            player.hit(projectile);
-            projectile.destroy();
+            projectile.stop(player);
           }
         });
 
       if (projectile.displacement >= projectile.range) {
-        projectile.destroy();
+        projectile.stop();
       }
     });
+  }
+
+  stop(player) {
+    if (this.speed === 0) return;
+
+    let stopFunction = (projectile, player) => {
+      if (player) player.hit(projectile);
+      this.destroy();
+    };
+
+    if (this.hasStopFunction) {
+      stopFunction = weapons[this.weaponName].stopProjectileFunction;
+    }
+
+    stopFunction(this, player);
   }
 
   destroy() {

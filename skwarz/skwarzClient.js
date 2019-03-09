@@ -149,18 +149,22 @@ class Skwarz {
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
-    if (terrainValue > 4000) {
+    if (terrainValue > 3000) {
       return blocks.dirt;
-    } else if (terrainValue > 1000) {
+    } else if (terrainValue > 500) {
       return blocks.bush;
-    } else if (terrainValue > 200) {
+    } else if (terrainValue > 300) {
       return blocks.wall;
-    } else if (terrainValue > 150) {
+    } else if (terrainValue > 200) {
       return mapObjects.weapons.shotgun;
-    } else if (terrainValue > 100) {
+    } else if (terrainValue > 150) {
       return mapObjects.weapons.pistol;
-    } else {
+    } else if (terrainValue > 100) {
       return mapObjects.weapons.smg;
+    } else if (terrainValue > 50) {
+      return mapObjects.weapons.grenade;
+    } else {
+      return mapObjects.weapons.smoke;
     }
   }
 
@@ -231,15 +235,29 @@ class Skwarz {
       this.drawPlayer(player);
     });
 
-    state.projectiles.forEach(projectile => {
+    state.entities.projectiles.forEach(projectile => {
       const { position } = projectile;
-      ctx.fillStyle = "black";
-      ctx.fillRect(
+      ctx.fillStyle = projectile.color;
+      const drawValues = [
         Math.trunc(position.x - me.position.x - gridSide / 2 + cWidth / 2),
         Math.trunc(position.y - me.position.y - gridSide / 2 + cHeight / 2),
         position.width + 1,
         position.height + 1
-      );
+      ];
+      ctx.fillRect(...drawValues);
+      ctx.strokeRect(...drawValues);
+    });
+
+    state.entities.smokes.forEach(smoke => {
+      const { x, y, width, height } = smoke;
+      ctx.fillStyle = "grey";
+      const drawValues = [
+        Math.trunc(x - me.position.x - gridSide / 2 + cWidth / 2),
+        Math.trunc(y - me.position.y - gridSide / 2 + cHeight / 2),
+        width + 1,
+        height + 1
+      ];
+      ctx.fillRect(...drawValues);
     });
 
     this.drawPlayer(me);
@@ -299,19 +317,20 @@ class Skwarz {
   drawTerrain(terrain, x, y) {
     const ctx = this.ctx;
     const gridSide = this.gridSide;
+    const drawValues = [x, y, gridSide, gridSide];
 
     if (terrain.type === "block") {
       ctx.fillStyle = terrain.color;
-      ctx.fillRect(x, y, gridSide, gridSide);
+      ctx.fillRect(...drawValues);
     } else if (terrain.type === "object") {
       ctx.fillStyle = blocks.dirt.color;
-      ctx.fillRect(x, y, gridSide, gridSide);
-      ctx.drawImage(terrain.image, x, y, gridSide, gridSide);
+      ctx.fillRect(...drawValues);
+      ctx.drawImage(terrain.image, ...drawValues);
     }
 
     if (terrain.stroke) {
       ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, gridSide, gridSide);
+      ctx.strokeRect(...drawValues);
     }
   }
 
@@ -329,11 +348,10 @@ class Skwarz {
       position.y - me.position.y - gridSide / 2 + cHeight / 2
     );
 
+    const drawValues = [x, y, position.width + 1, position.height + 1];
     ctx.fillStyle = player.color;
-    if (player.visible === true)
-      ctx.fillRect(x, y, position.width + 1, position.height + 1);
-
-    ctx.strokeRect(x, y, position.width + 1, position.height + 1);
+    if (player.visible === true) ctx.fillRect(...drawValues);
+    ctx.strokeRect(...drawValues);
   }
 
   drawUI(action, data) {
@@ -433,5 +451,4 @@ class Skwarz {
 }
 
 canvas = document.querySelector("canvas");
-canvas.par;
 let game = new Skwarz(canvas);

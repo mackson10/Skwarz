@@ -18,7 +18,7 @@ class Player {
       width: undefined,
       height: undefined
     };
-    this.weapon = new Weapon(weapons.shotgun);
+    this.weapon = new Weapon(weapons.smoke);
     this.lastDamage = 0;
     this.status = "alive";
     this.place = 1;
@@ -114,7 +114,7 @@ class Player {
     let gettingWeapon = null;
 
     terrain.forEach(terrain => {
-      visible = visible && terrain.name !== "bush";
+      visible = visible && !terrain.hide;
       burning = burning || terrain.name === "fire";
       if (terrain.type === "weapon" && this.weapon.name !== terrain.name) {
         gettingWeapon = terrain.name;

@@ -14,6 +14,16 @@ const mapObjects = {
       name: "smg",
       type: "weapon",
       solid: false
+    },
+    grenade: {
+      name: "grenade",
+      type: "weapon",
+      solid: false
+    },
+    smoke: {
+      name: "smoke",
+      type: "weapon",
+      solid: false
     }
   }
 };

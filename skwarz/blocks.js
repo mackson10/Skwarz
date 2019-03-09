@@ -14,6 +14,7 @@ const blocks = {
   },
   bush: {
     type: "block",
+    hide: true,
     name: "bush",
     solid: false,
     color: "#4ca01e",
@@ -24,6 +25,13 @@ const blocks = {
     name: "fire",
     solid: false,
     color: "orangered"
+  },
+  smoke: {
+    hide: true,
+    type: "block",
+    name: "smoke",
+    solid: false,
+    color: "grey"
   }
 };
 

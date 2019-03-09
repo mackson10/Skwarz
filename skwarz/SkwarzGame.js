@@ -23,9 +23,11 @@ class SkwarzGame {
     this.spawnRadius = this.spawnGridRadius * this.gridSide;
     this.maxRadius = this.maxGridRadius * this.gridSide;
     this.entities = {
-      projectiles: new Map()
+      projectiles: new Map(),
+      smokes: new Map()
     };
     this.projectilesCount = 0;
+    this.smokesCount = 0;
     this.deaths = [];
     this.ring = new Ring(this);
     this.setIo();
@@ -213,10 +215,18 @@ class SkwarzGame {
       this.entities.projectiles
     );
 
+    const smokes = [];
+    Array.from(this.entities.smokes).map(([_, smoke]) => {
+      smokes.push(smoke);
+    });
+
     const stateObject = {
       players: formatedPlayers,
       remainingPlayers: this.remainingPlayers,
-      projectiles: formatedProjectiles,
+      entities: {
+        projectiles: formatedProjectiles,
+        smokes
+      },
       ringLastMovement: this.ring.lastMovement
     };
 
@@ -252,19 +262,22 @@ class SkwarzGame {
     this.checkAlive();
   }
 
-  createProjectile(player, options) {
-    const { direction, width, height, speed, range, damage } = options;
+  createProjectile(player, origin, options) {
+    const {
+      direction,
+      width,
+      height,
+      speed,
+      range,
+      damage,
+      weaponName,
+      hasStopFunction,
+      friendlyFire,
+      color
+    } = options;
     const firstPosition = {
-      x:
-        player.position.x +
-        player.position.width / 2 -
-        width / 2 +
-        speed * direction.x,
-      y:
-        player.position.y +
-        player.position.height / 2 -
-        height / 2 +
-        speed * direction.y,
+      x: origin.x + origin.width / 2 - width / 2 + speed * direction.x,
+      y: origin.y + origin.height / 2 - height / 2 + speed * direction.y,
       width,
       height
     };
@@ -274,7 +287,11 @@ class SkwarzGame {
       position: firstPosition,
       speed,
       range,
-      damage
+      damage,
+      weaponName,
+      hasStopFunction,
+      friendlyFire,
+      color
     };
 
     const newProjectile = new Projectile(player, projectileOptions);
@@ -334,6 +351,19 @@ class SkwarzGame {
     const gridX = Math.floor(x / this.gridSide);
     const gridY = Math.floor(y / this.gridSide);
 
+    const smokes = [];
+    Array.from(this.entities.smokes).map(([_, smoke]) => {
+      smokes.push(smoke);
+    });
+    if (
+      smokes.some(
+        smoke =>
+          Math.trunc(smoke.x / this.gridSide) === gridX &&
+          Math.trunc(smoke.y / this.gridSide) === gridY
+      )
+    )
+      return blocks.smoke;
+
     if (this.ring.reached(gridX, gridY)) {
       return blocks.fire;
     }
@@ -348,18 +378,59 @@ class SkwarzGame {
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
-    if (terrainValue > 4000) {
+    if (terrainValue > 3000) {
       return blocks.dirt;
-    } else if (terrainValue > 1000) {
+    } else if (terrainValue > 500) {
       return blocks.bush;
-    } else if (terrainValue > 200) {
+    } else if (terrainValue > 300) {
       return blocks.wall;
-    } else if (terrainValue > 150) {
+    } else if (terrainValue > 200) {
       return mapObjects.weapons.shotgun;
-    } else if (terrainValue > 100) {
+    } else if (terrainValue > 150) {
       return mapObjects.weapons.pistol;
-    } else {
+    } else if (terrainValue > 100) {
       return mapObjects.weapons.smg;
+    } else if (terrainValue > 50) {
+      return mapObjects.weapons.grenade;
+    } else {
+      return mapObjects.weapons.smoke;
+    }
+  }
+
+  smoke({ x, y }) {
+    const gridX = Math.floor(x / this.gridSide);
+    const gridY = Math.floor(y / this.gridSide);
+
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const smokePosition = {
+          x: (gridX + i) * this.gridSide,
+          y: (gridY + j) * this.gridSide,
+          width: this.gridSide,
+          height: this.gridSide
+        };
+        const smokeTerrain = this.calculateTerrain(
+          smokePosition.x,
+          smokePosition.y
+        );
+        if (!smokeTerrain.solid) {
+          const smoke = {
+            id: ++this.smokesCount,
+            ...smokePosition
+          };
+
+          const deltaX = Math.abs(i);
+          const deltaY = Math.abs(j);
+
+          setTimeout(() => {
+            this.entities.smokes.set(smoke.id, smoke);
+          }, (deltaX + deltaY) * 200);
+
+          setTimeout(() => {
+            this.entities.smokes.delete(smoke.id);
+          }, (deltaX + deltaY) * 200 + 10000);
+        }
+      }
     }
   }
 }
