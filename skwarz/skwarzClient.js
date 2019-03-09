@@ -117,17 +117,14 @@ class Skwarz {
     this.ring = new Ring(this);
     this.ring.interaction();
     this.state = data;
-    this.maior = 0;
+    this.ping = 0;
   }
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.state = data;
-    this.maior =
-      data.time - new Date().getTime() > this.maior
-        ? data.time - new Date().getTime()
-        : this.maior;
-    console.log(this.maior);
+    this.ping = new Date().getTime() - data.time;
+    console.log(this.ping);
     this.ring.lastMovement = data.ringLastMovement;
     this.ring.interaction();
     this.drawGame();
