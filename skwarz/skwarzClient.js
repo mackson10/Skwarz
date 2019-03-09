@@ -117,11 +117,17 @@ class Skwarz {
     this.ring = new Ring(this);
     this.ring.interaction();
     this.state = data;
+    this.maior = 0;
   }
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.state = data;
+    this.maior =
+      data.time - new Date().getTime() > this.maior
+        ? data.time - new Date().getTime()
+        : this.maior;
+    console.log(this.maior);
     this.ring.lastMovement = data.ringLastMovement;
     this.ring.interaction();
     this.drawGame();
@@ -234,7 +240,17 @@ class Skwarz {
     state.players.forEach(player => {
       this.drawPlayer(player);
     });
-
+    state.entities.smokes.forEach(smoke => {
+      const { x, y, width, height } = smoke;
+      ctx.fillStyle = "grey";
+      const drawValues = [
+        Math.trunc(x - me.position.x - gridSide / 2 + cWidth / 2),
+        Math.trunc(y - me.position.y - gridSide / 2 + cHeight / 2),
+        width + 1,
+        height + 1
+      ];
+      ctx.fillRect(...drawValues);
+    });
     state.entities.projectiles.forEach(projectile => {
       const { position } = projectile;
       ctx.fillStyle = projectile.color;
@@ -246,18 +262,6 @@ class Skwarz {
       ];
       ctx.fillRect(...drawValues);
       ctx.strokeRect(...drawValues);
-    });
-
-    state.entities.smokes.forEach(smoke => {
-      const { x, y, width, height } = smoke;
-      ctx.fillStyle = "grey";
-      const drawValues = [
-        Math.trunc(x - me.position.x - gridSide / 2 + cWidth / 2),
-        Math.trunc(y - me.position.y - gridSide / 2 + cHeight / 2),
-        width + 1,
-        height + 1
-      ];
-      ctx.fillRect(...drawValues);
     });
 
     this.drawPlayer(me);

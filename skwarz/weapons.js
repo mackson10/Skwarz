@@ -5,7 +5,7 @@ const weapons = {
     shootCooldown: 200,
     reloadTime: 2000,
     projectile: {
-      speed: 10,
+      speed: 15,
       width: 10,
       height: 10,
       range: 330,
@@ -26,7 +26,7 @@ const weapons = {
     shootCooldown: 80,
     reloadTime: 2000,
     projectile: {
-      speed: 12,
+      speed: 17,
       width: 6,
       height: 6,
       range: 300,
@@ -47,7 +47,7 @@ const weapons = {
     shootCooldown: 400,
     reloadTime: 3000,
     projectile: {
-      speed: 11,
+      speed: 16,
       width: 15,
       height: 15,
       range: 150,
@@ -92,7 +92,7 @@ const weapons = {
     shootCooldown: 500,
     reloadTime: 3500,
     projectile: {
-      speed: 10,
+      speed: 15,
       width: 14,
       height: 14,
       range: 150,
@@ -113,7 +113,7 @@ const weapons = {
       const player = projectile.owner;
       setTimeout(() => {
         const fragmentProjectile = {
-          speed: 13,
+          speed: 18,
           width: 12,
           height: 12,
           range: 150,
@@ -185,7 +185,7 @@ const weapons = {
     shootCooldown: 500,
     reloadTime: 3500,
     projectile: {
-      speed: 10,
+      speed: 15,
       width: 14,
       height: 14,
       range: 150,

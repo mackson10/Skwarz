@@ -15,6 +15,7 @@ class SkwarzGame {
       minPlayers: 2,
       maxPlayers: ticketsArray.length
     });
+    this.loopTime = 25;
     this.status = "waiting players";
     this.seed = Math.floor(Math.random() * 100000) + 1;
     this.gridSide = 20;
@@ -183,7 +184,7 @@ class SkwarzGame {
   startGame() {
     this.setStatus("starting");
     this.maior = 0;
-    this.loopTimer = setInterval(() => this.loopFunction(), 16);
+    this.loopTimer = setInterval(() => this.loopFunction(), this.loopTime);
   }
 
   loopFunction() {
@@ -195,6 +196,7 @@ class SkwarzGame {
       new Date().getTime() - lastTime >= this.maior
         ? new Date().getTime() - lastTime
         : this.maior;
+    console.log(this.maior);
   }
   interactions() {
     Projectile.interactions(this.entities.projectiles, this);
@@ -227,7 +229,8 @@ class SkwarzGame {
         projectiles: formatedProjectiles,
         smokes
       },
-      ringLastMovement: this.ring.lastMovement
+      ringLastMovement: this.ring.lastMovement,
+      time: new Date().getTime()
     };
 
     this.connectedPlayers.players.forEach(player => {
@@ -276,8 +279,8 @@ class SkwarzGame {
       color
     } = options;
     const firstPosition = {
-      x: origin.x + origin.width / 2 - width / 2 + speed * direction.x,
-      y: origin.y + origin.height / 2 - height / 2 + speed * direction.y,
+      x: origin.x + origin.width / 2 - width / 2,
+      y: origin.y + origin.height / 2 - height / 2,
       width,
       height
     };
