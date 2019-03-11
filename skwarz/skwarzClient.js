@@ -117,14 +117,12 @@ class Skwarz {
     this.ring = new Ring(this);
     this.ring.interaction();
     this.state = data;
-    this.ping = 0;
   }
 
   updateState(data) {
     if (this.status !== "running") this.setStatus("running");
     this.state = data;
     this.ping = new Date().getTime() - data.time;
-    console.log(this.ping);
     this.ring.lastMovement = data.ringLastMovement;
     this.ring.interaction();
     this.drawGame();
@@ -152,19 +150,19 @@ class Skwarz {
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
-    if (terrainValue > 3000) {
+    if (terrainValue > 2000) {
       return blocks.dirt;
-    } else if (terrainValue > 500) {
-      return blocks.bush;
-    } else if (terrainValue > 300) {
+    } else if (terrainValue > 800) {
       return blocks.wall;
-    } else if (terrainValue > 200) {
-      return mapObjects.weapons.shotgun;
-    } else if (terrainValue > 150) {
-      return mapObjects.weapons.pistol;
     } else if (terrainValue > 100) {
-      return mapObjects.weapons.smg;
+      return blocks.bush;
+    } else if (terrainValue > 75) {
+      return mapObjects.weapons.shotgun;
     } else if (terrainValue > 50) {
+      return mapObjects.weapons.pistol;
+    } else if (terrainValue > 25) {
+      return mapObjects.weapons.smg;
+    } else if (terrainValue > 10) {
       return mapObjects.weapons.grenade;
     } else {
       return mapObjects.weapons.smoke;
@@ -323,7 +321,7 @@ class Skwarz {
     if (terrain.type === "block") {
       ctx.fillStyle = terrain.color;
       ctx.fillRect(...drawValues);
-    } else if (terrain.type === "object") {
+    } else if (terrain.type === "weapon") {
       ctx.fillStyle = blocks.dirt.color;
       ctx.fillRect(...drawValues);
       ctx.drawImage(terrain.image, ...drawValues);
@@ -351,7 +349,7 @@ class Skwarz {
 
     const drawValues = [x, y, position.width + 1, position.height + 1];
     ctx.fillStyle = player.color;
-    if (player.visible === true) ctx.fillRect(...drawValues);
+    if (player.visible) ctx.fillRect(...drawValues);
     ctx.strokeRect(...drawValues);
   }
 
@@ -387,6 +385,7 @@ class Skwarz {
 
         ctx.fillText(`players: ${state.remainingPlayers}`, cWidth - 170, 40);
         ctx.fillText(`your kills: ${me.kills}`, cWidth - 170, 60);
+        ctx.fillText(`ping: ${this.ping} ms`, cWidth - 170, 80);
 
         ctx.font = "20px monospace";
         this.deaths.slice(-3).forEach((death, i) => {

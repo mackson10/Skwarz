@@ -17,31 +17,31 @@ const mapObjects = {
   weapons: {
     shotgun: {
       name: "shotgun",
-      type: "object",
+      type: "weapon",
       image: shotgunImg,
       stroke: true
     },
     pistol: {
       name: "pistol",
-      type: "object",
+      type: "weapon",
       image: pistolImg,
       stroke: true
     },
     smg: {
       name: "smg",
-      type: "object",
+      type: "weapon",
       image: smgImg,
       stroke: true
     },
     grenade: {
       name: "grenade",
-      type: "object",
+      type: "weapon",
       image: grenadeImg,
       stroke: true
     },
     smoke: {
       name: "smoke",
-      type: "object",
+      type: "weapon",
       image: smokeImg,
       stroke: true
     }

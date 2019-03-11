@@ -18,7 +18,7 @@ class Player {
       width: undefined,
       height: undefined
     };
-    this.weapon = new Weapon(weapons.smoke);
+    this.weapon = new Weapon(weapons.pistol);
     this.lastDamage = 0;
     this.status = "alive";
     this.place = 1;

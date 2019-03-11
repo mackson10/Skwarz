@@ -27,5 +27,4 @@ const mapObjects = {
     }
   }
 };
-
 module.exports = mapObjects;

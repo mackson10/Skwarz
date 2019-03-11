@@ -69,4 +69,6 @@ class Ring {
   }
 }
 
-module.exports = Ring;
+if (typeof window === "undefined") {
+  module.exports = Ring;
+}

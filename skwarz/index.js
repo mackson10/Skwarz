@@ -11,7 +11,7 @@ module.exports = (app, io) => {
       { path: "/blocks.js", fileName: __dirname + "/blocks.js" },
       { path: "/Player.js", fileName: __dirname + "/Player.js" },
       { path: "/Ring.js", fileName: __dirname + "/Ring.js" },
-      { path: "/mapObjects.js", fileName: __dirname + "/mapObjectsC.js" }
+      { path: "/mapObjects.js", fileName: __dirname + "/mapObjects.js" }
     ],
     gameClass: SkwarzGame,
     queueDelayedTime: 10000

@@ -183,20 +183,13 @@ class SkwarzGame {
 
   startGame() {
     this.setStatus("starting");
-    this.maior = 0;
     this.loopTimer = setInterval(() => this.loopFunction(), this.loopTime);
   }
 
   loopFunction() {
-    const lastTime = new Date().getTime();
     if (this.status === "starting") this.setStatus("running");
     this.interactions();
     this.sendState();
-    this.maior =
-      new Date().getTime() - lastTime >= this.maior
-        ? new Date().getTime() - lastTime
-        : this.maior;
-    console.log(this.maior);
   }
   interactions() {
     Projectile.interactions(this.entities.projectiles, this);
@@ -354,18 +347,14 @@ class SkwarzGame {
     const gridX = Math.floor(x / this.gridSide);
     const gridY = Math.floor(y / this.gridSide);
 
-    const smokes = [];
     Array.from(this.entities.smokes).map(([_, smoke]) => {
-      smokes.push(smoke);
-    });
-    if (
-      smokes.some(
+      if (
         smoke =>
           Math.trunc(smoke.x / this.gridSide) === gridX &&
           Math.trunc(smoke.y / this.gridSide) === gridY
       )
-    )
-      return blocks.smoke;
+        return blocks.smoke;
+    });
 
     if (this.ring.reached(gridX, gridY)) {
       return blocks.fire;
@@ -381,19 +370,19 @@ class SkwarzGame {
     const terrainValue =
       Math.abs(Math.cos(gridX ** 1 / 2 + gridY ** 3 + this.seed ** 2)) * 100000;
 
-    if (terrainValue > 3000) {
+    if (terrainValue > 2000) {
       return blocks.dirt;
-    } else if (terrainValue > 500) {
-      return blocks.bush;
-    } else if (terrainValue > 300) {
+    } else if (terrainValue > 800) {
       return blocks.wall;
-    } else if (terrainValue > 200) {
-      return mapObjects.weapons.shotgun;
-    } else if (terrainValue > 150) {
-      return mapObjects.weapons.pistol;
     } else if (terrainValue > 100) {
-      return mapObjects.weapons.smg;
+      return blocks.bush;
+    } else if (terrainValue > 75) {
+      return mapObjects.weapons.shotgun;
     } else if (terrainValue > 50) {
+      return mapObjects.weapons.pistol;
+    } else if (terrainValue > 25) {
+      return mapObjects.weapons.smg;
+    } else if (terrainValue > 10) {
       return mapObjects.weapons.grenade;
     } else {
       return mapObjects.weapons.smoke;

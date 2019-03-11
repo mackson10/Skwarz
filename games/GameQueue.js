@@ -13,7 +13,7 @@ class GameQueue {
     this.waitingDelayedTime = options.waitingDelayedTime;
     this.waitingDelayed = 0;
     this.io = io;
-    this.initGame = initGame;
+    this.initFunction = initGame;
     this.status = "waiting";
     this.setRoutes();
     this.setIo();
@@ -67,25 +67,29 @@ class GameQueue {
   }
 
   checkRoom(room) {
-    if (room.status === "waiting" && room.playersEnough()) {
-      room.status = "waiting delayed";
-      room.delayedTime = new Date().getTime();
-      setTimeout(() => this.checkRoom(room), this.waitingDelayedTime);
+    if (room.playersEnough()) {
+      room.initTimer = setTimeout(
+        () => this.initGame(room),
+        this.waitingDelayedTime
+      );
     }
 
-    if (
-      room.status === "waiting delayed" &&
-      (new Date().getTime() - room.delayedTime >= this.waitingDelayedTime ||
-        room.isFull())
-    ) {
-      const roomTickets = {
-        roomId: room.id,
-        array: room.array().map(player => ({ ...player.ticket }))
-      };
-      this.initGame(roomTickets);
-      this.queueRooms.delete(room.id);
+    if (room.isFull()) {
+      if (room.initTimer) {
+        clearTimeout(room.initTimer);
+      }
+      this.initGame(room);
     }
     this.io.to(room.id).emit("players", room.size());
+  }
+
+  initGame(room) {
+    const roomTickets = {
+      roomId: room.id,
+      array: room.array().map(player => ({ ...player.ticket }))
+    };
+    this.initFunction(roomTickets);
+    this.queueRooms.delete(room.id);
   }
 
   confirmQueue(ticket, socket) {
@@ -94,12 +98,11 @@ class GameQueue {
       let playerRoom = GameRoom.available(this.queueRooms);
 
       if (!playerRoom) {
-        const playerRoomId = ++this.queueRoomsCount;
         playerRoom = new GameRoom({
           ...this.roomOptions,
-          id: playerRoomId
+          id: ++this.queueRoomsCount
         });
-        this.queueRooms.set(playerRoomId, playerRoom);
+        this.queueRooms.set(playerRoom.id, playerRoom);
       }
 
       const newPlayer = { ...ticket, ticket, socket, room: playerRoom };
