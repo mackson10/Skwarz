@@ -1,17 +1,17 @@
 const shotgunImg = new Image();
-shotgunImg.src = "https://image.flaticon.com/icons/svg/486/486872.svg";
+shotgunImg.src = "assets/shotgun-svgrepo-com.svg";
 
 const pistolImg = new Image();
-pistolImg.src = "https://image.flaticon.com/icons/svg/31/31502.svg";
+pistolImg.src = "assets/gun-svgrepo-com.svg";
 
 const smgImg = new Image();
-smgImg.src = "https://image.flaticon.com/icons/svg/942/942595.svg";
+smgImg.src = "assets/shotgun-gun-svgrepo-com.svg";
 
 const grenadeImg = new Image();
-grenadeImg.src = "https://image.flaticon.com/icons/svg/2/2034.svg";
+grenadeImg.src = "assets/grenade-svgrepo-com.svg";
 
 const smokeImg = new Image();
-smokeImg.src = "https://image.flaticon.com/icons/svg/473/473518.svg";
+smokeImg.src = "assets/stun-grenade-svgrepo-com.svg";
 
 const mapObjects = {
   weapons: {

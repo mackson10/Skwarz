@@ -1,3 +1,4 @@
+const express = require("express");
 const GameQueue = require("./GameQueue");
 
 class GameManager {
@@ -32,6 +33,8 @@ class GameManager {
     this.options.files.forEach(({ path, fileName }) => {
       this.app.get(this.path + path, (req, res) => res.sendFile(fileName));
     });
+
+    this.app.use("/assets", express.static('assets'));
   }
 
   initGame(tickets) {
